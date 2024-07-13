@@ -1,55 +1,45 @@
-python-template
+minecraft-server-bot
 =======================
 
-A GitHub repository template for Python projects, which includes configuration for various tools, including:
+A Discord bot for remotely managing a Minecraft server.
 
-- `Black`_
-- `Flake8`_
-- `isort`_
-- `Hound`_
+Setup
+-----
 
-isort and flake8 are configured to be compatible with Black formatting standards.
+#. This bot uses `tmux`_ to run your server in the background, so first make sure you have this installed on your machine first.
+#. Python packages are managed by `pip`_, and you're highly encouraged to use `venv`_ or `virtualenv`_ when you install packages for this project. 
 
-The ``.gitignore`` is configured for Python, based on the ``.gitignore`` `template on GitHub <https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore>`__, plus additional rules ignoring VS Code and IntelliJ IDEA project-specific configuration directories.
+   Install the packages using::
 
-An MIT License template can be found in ``LICENSE``, which is **not the license** for this template.
+    pip install -r requirements.txt
 
-Things for you to do
---------------------
+#. Copy ``.env_template`` to ``.env``::
 
-- Edit **this document**, so it describes your project, and not this template.
-- Edit ``requirements.txt``, where you should detail the package requirements for your project.
+    cp .env{_template,}
 
-License
+   - ``BOT_TOKEN`` is the token for your bot on Discord. Refer to the `Discord documentation`_ for more information.
+   - ``SERVER_PATH`` is the directory where the server will be run from.
+   - ``EXECUTABLE_FILE`` is the name of the script that will be executed to run your server, relative to ```SERVER_PATH``. The simplest form is to just run the server by calling ``java``::
+
+         java -Xmx2G -jar server.jar nogui
+
+     Make sure that the server command line can be accessed while this script is running.
+
+Usage
+-----
+
+Simply run the bot by executing ``main.py``::
+
+    ./main.py
+
+Licence
 -------
 
-This is free and unencumbered software released into the public domain.
+Refer to `LICENSE`_ for the full licence text.
 
-Anyone is free to copy, modify, publish, use, compile, sell, or
-distribute this software, either in source code form or as a compiled
-binary, for any purpose, commercial or non-commercial, and by any
-means.
-
-In jurisdictions that recognize copyright laws, the author or authors
-of this software dedicate any and all copyright interest in the
-software to the public domain. We make this dedication for the benefit
-of the public at large and to the detriment of our heirs and
-successors. We intend this dedication to be an overt act of
-relinquishment in perpetuity of all present and future rights to this
-software under copyright law.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-
-For more information, please refer to <http://unlicense.org/>
-
-.. _PEP 517: https://peps.python.org/pep-0517/
-.. _Black: https://black.readthedocs.io/en/stable/
-.. _Flake8: https://flake8.pycqa.org
-.. _isort: https://pycqa.github.io/isort/
-.. _Hound: https://www.houndci.com
+.. _tmux: https://github.com/tmux/tmux
+.. _pip: https://pip.pypa.io/en/stable/index.html
+.. _venv: https://docs.python.org/3/library/venv.html
+.. _virtualenv: https://virtualenv.pypa.io/en/latest/
+.. _Discord documentation: https://discord.com/developers/
+.. _LICENSE: LICENSE
