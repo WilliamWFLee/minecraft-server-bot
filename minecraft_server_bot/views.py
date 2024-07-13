@@ -1,7 +1,7 @@
 import discord
 
-from embeds import offline_embed, online_embed, starting_embed
-from server import ServerManager
+from .embeds import offline_embed, online_embed, starting_embed
+from .server import ServerManager
 
 
 class BaseServerView(discord.ui.View):

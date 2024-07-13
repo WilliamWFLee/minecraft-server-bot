@@ -5,10 +5,12 @@ import libtmux
 
 
 class ServerManager:
-    def __init__(self, *, dir: Path | str, host: str = "127.0.0.1", port: int = 25565):
+    def __init__(
+        self, *, server_path: Path | str, host: str = "127.0.0.1", port: int = 25565
+    ):
         self.host = host
         self.port = port
-        self.dir = dir
+        self.server_path = server_path
         self.tmux_server = libtmux.Server()
 
     async def wait_for_server_start(self) -> None:
@@ -64,7 +66,7 @@ class ServerManager:
     async def run_server_start(self) -> None:
         self.start_tmux_session()
         if await self.is_server_close(timeout=1):
-            self.send_terminal_command(f"cd {self.dir}")
+            self.send_terminal_command(f"cd {self.server_path}")
             self.send_terminal_command("./run.sh")
 
     async def run_server_stop(self) -> None:
