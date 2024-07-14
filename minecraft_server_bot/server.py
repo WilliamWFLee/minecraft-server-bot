@@ -47,7 +47,7 @@ class ServerManager:
         except asyncio.TimeoutError:
             return False
 
-    async def is_server_close(self, *, timeout: int = 30) -> bool:
+    async def is_server_closed(self, *, timeout: int = 30) -> bool:
         try:
             await asyncio.wait_for(self.wait_for_server_stop(), timeout=timeout)
             return True
@@ -55,7 +55,7 @@ class ServerManager:
             return False
 
     async def run_server_start(self) -> None:
-        if await self.is_server_close(timeout=1):
+        if await self.is_server_closed(timeout=1):
             self.tmux_manager.send_command(f"cd {self.server_path}")
             self.tmux_manager.send_command("./run.sh")
 
