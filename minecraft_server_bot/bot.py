@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import discord
 
 from .embeds import offline_embed, online_embed
@@ -5,10 +7,19 @@ from .server import ServerManager
 from .view import ServerView
 
 
-def initialise_bot(*, server_path):
+def initialise_bot(
+    *,
+    server_path: Path | str,
+    executable_filename: str,
+    session_name: str = None,
+):
     intents = discord.Intents.default()
     bot = discord.Bot(intents=intents)
-    server_manager = ServerManager(server_path=server_path)
+    server_manager = ServerManager(
+        server_path=server_path,
+        executable_filename=executable_filename,
+        session_name=session_name,
+    )
 
     @bot.event
     async def on_ready():

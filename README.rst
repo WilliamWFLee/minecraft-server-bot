@@ -17,13 +17,20 @@ Setup
 
     cp .env{_template,}
 
+   The following configuration options are **required**:
+
    - ``BOT_TOKEN`` is the token for your bot on Discord. Refer to the `Discord documentation`_ for more information.
-   - ``SERVER_PATH`` is the directory where the server will be run from.
+
+   The following configuration options are **optional**:
+
+   - ``SERVER_PATH`` is the directory where the server will be run from. By default this is ``~/minecraft_server``.
    - ``EXECUTABLE_FILE`` is the name of the script that will be executed to run your server, relative to ```SERVER_PATH``. The simplest form is to just run the server by calling ``java``::
 
          java -Xmx2G -jar server.jar nogui
 
-     Make sure that the server command line can be accessed while this script is running.
+     Make sure that the server command line can be accessed while this script is running. By default, this is ``./run.sh``
+
+   - ``SESSION_NAME`` is the name of the ``tmux``` session that the bot will use to manage the session. If the name is blank, or not set then the default is ``minecraft_server``.
 
 Usage
 -----

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import asyncio
 import os
+import shutil
 from pathlib import Path
 
 import dotenv
@@ -16,13 +16,26 @@ def main():
     if token is None:
         raise Exception("BOT_TOKEN environment variable is not defined")
 
-    server_path = Path(os.environ.get("SERVER_PATH", "~/server"))
+    server_path = os.environ.get("SERVER_PATH")
+    if not server_path:
+        server_path = "~/minecraft_server"
     try:
-        server_path = server_path.expanduser().resolve(strict=True)
+        server_path = Path(server_path).expanduser().resolve(strict=True)
     except FileNotFoundError:
         raise Exception(f"Server directory does not exist: '{server_path}'") from None
 
-    bot = initialise_bot(server_path=server_path)
+    executable_filename = os.environ.get("EXECUTABLE_FILENAME")
+    if not executable_filename:
+        executable_filename = "run.sh"
+    if shutil.which(server_path.joinpath(executable_filename)) is None:
+        raise Exception(f"Could not find '{executable_filename}' in server directory")
+
+    session_name = os.environ.get("SESSION_NAME")
+    bot = initialise_bot(
+        server_path=server_path,
+        executable_filename=executable_filename,
+        session_name=session_name,
+    )
     bot.run(token)
 
 

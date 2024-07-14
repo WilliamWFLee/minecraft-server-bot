@@ -10,18 +10,24 @@ class ServerManager:
         self,
         *,
         server_path: Path | str,
+        executable_filename: str,
         host: str = "127.0.0.1",
         port: int = 25565,
         tmux_manager: TmuxManager | None = None,
+        session_name: str | None = None,
     ):
         self.server_path = server_path
+        self.executable_filename = executable_filename
         self.host = host
         self.port = port
         self.state = None
         self._lock = asyncio.Lock()
 
+        if not session_name:
+            session_name = "minecraft_server"
+
         if tmux_manager is None:
-            self.tmux_manager = TmuxManager(session_name="minecraft_server")
+            self.tmux_manager = TmuxManager(session_name=session_name)
 
     @staticmethod
     def with_lock(coro):
@@ -85,7 +91,7 @@ class ServerManager:
             self.state = "starting"
 
             self.tmux_manager.send_command(f"cd {self.server_path}")
-            self.tmux_manager.send_command("./run.sh")
+            self.tmux_manager.send_command(f"./{self.executable_filename}")
 
             result = await self.wait_for_server_start()
             if result:
