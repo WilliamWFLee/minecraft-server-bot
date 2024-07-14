@@ -139,7 +139,7 @@ class ServerManager:
         return await self.wait_for_server_stop(timeout=1)
 
     @with_lock
-    async def start_server(self) -> bool:
+    async def start_server(self):
         if await self.server_stopped():
             await self._set_state("starting")
 
@@ -151,8 +151,8 @@ class ServerManager:
                 await self._set_state("started")
             else:
                 await self._set_state("stopped")
-            return result
-        return True
+        else:
+            await self._set_state("started")
 
     @with_lock
     async def stop_server(self) -> bool:
@@ -166,8 +166,8 @@ class ServerManager:
                 await self._set_state("stopped")
             else:
                 await self._set_state("started")
-            return result
-        return True
+        else:
+            await self._set_state("stopped")
 
     async def initialise(self) -> None:
         await self._fetch_state()
