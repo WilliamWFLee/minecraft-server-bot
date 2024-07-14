@@ -12,6 +12,7 @@ def initialise_bot(*, server_path):
 
     @bot.event
     async def on_ready():
+        await server_manager.initialise()
         bot.add_view(ServerView(server_manager))
 
     @bot.slash_command(
@@ -19,7 +20,7 @@ def initialise_bot(*, server_path):
         contexts={discord.InteractionContextType.guild},
     )
     async def embed(ctx: discord.ApplicationContext):
-        if await server_manager.server_started(timeout=1):
+        if await server_manager.server_started():
             embed = online_embed()
         else:
             embed = offline_embed()
