@@ -6,17 +6,26 @@ from .tmux import TmuxManager
 
 class ServerManager:
     def __init__(
-        self, *, server_path: Path | str, host: str = "127.0.0.1", port: int = 25565
+        self,
+        *,
+        server_path: Path | str,
+        host: str = "127.0.0.1",
+        port: int = 25565,
+        tmux_manager: TmuxManager | None = None,
     ):
+        self.server_path = server_path
         self.host = host
         self.port = port
-        self.server_path = server_path
-        self.tmux_manager = TmuxManager(session_name="minecraft_server")
+        if tmux_manager is None:
+            self.tmux_manager = TmuxManager(session_name="minecraft_server")
+
+    async def test_connection(self) -> None:
+        await asyncio.open_connection(self.host, self.port)
 
     async def wait_for_server_start(self) -> None:
         while True:
             try:
-                await asyncio.open_connection(self.host, self.port)
+                await self.test_connection()
             except ConnectionRefusedError:
                 await asyncio.sleep(0.1)
             else:
@@ -25,7 +34,7 @@ class ServerManager:
     async def wait_for_server_stop(self) -> None:
         while True:
             try:
-                await asyncio.open_connection(self.host, self.port)
+                await self.test_connection()
             except ConnectionRefusedError:
                 return
             else:
