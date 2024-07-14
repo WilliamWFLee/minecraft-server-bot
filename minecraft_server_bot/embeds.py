@@ -19,8 +19,21 @@ def starting_embed():
 
 
 def online_embed():
-    return generate_server_embed(description="✅ Server is online")
+    return generate_server_embed(description="🚀 Server is online")
 
 
 def stopping_embed():
     return generate_server_embed(description="⏳ Server is being stopped")
+
+
+def please_wait_embed():
+    return generate_server_embed(description="⏳ Please wait")
+
+
+def get_embed_for_state(state: str):
+    return {
+        "stopped": offline_embed,
+        "starting": starting_embed,
+        "started": online_embed,
+        "stopping": stopping_embed,
+    }[state]()

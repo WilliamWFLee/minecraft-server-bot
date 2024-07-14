@@ -2,7 +2,7 @@ from pathlib import Path
 
 import discord
 
-from .embeds import offline_embed, online_embed
+from .embeds import get_embed_for_state
 from .server import ServerManager
 from .view import ServerView
 
@@ -31,10 +31,10 @@ def initialise_bot(
         contexts={discord.InteractionContextType.guild},
     )
     async def embed(ctx: discord.ApplicationContext):
-        if await server_manager.server_started():
-            embed = online_embed()
-        else:
-            embed = offline_embed()
+        if not ctx.bot.is_ready():
+            await ctx.defer()
+            await ctx.bot.wait_until_ready()
+        embed = get_embed_for_state(server_manager.state)
         await ctx.respond(embed=embed, view=ServerView(server_manager))
 
     return bot

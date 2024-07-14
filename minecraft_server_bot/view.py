@@ -2,25 +2,21 @@ import asyncio
 
 import discord
 
-from .embeds import offline_embed, online_embed, starting_embed, stopping_embed
+from .embeds import get_embed_for_state, please_wait_embed
 from .server import ServerManager
 
 
 class ServerView(discord.ui.View):
     def __init__(self, server_manager: ServerManager):
         super().__init__(timeout=None)
-        self.server_manager = server_manager
+        self.server_manager: ServerManager = server_manager
+        self._messages: set[discord.Message] = set()
+        self.server_manager.listener(self.server_state_listener)
 
-    async def update(self, interaction: discord.Interaction = None):
-        embed = {
-            "stopped": offline_embed,
-            "starting": starting_embed,
-            "started": online_embed,
-            "stopping": stopping_embed,
-        }[self.server_manager.state]()
-
-        if interaction is not None:
-            await interaction.edit(embed=embed, view=self)
+    async def server_state_listener(self, state: str) -> None:
+        embed = get_embed_for_state(state)
+        for message in self._messages:
+            await message.edit(embed=embed, view=self)
 
     @discord.ui.button(
         label="Start",
@@ -32,11 +28,9 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        task = asyncio.Task(self.server_manager.start_server())
-        await self.update()
-
-        await task
-        await self.update(interaction)
+        self._messages.add(interaction.message)
+        await interaction.edit(embed=please_wait_embed(), view=self)
+        await self.server_manager.start_server()
 
     @discord.ui.button(
         label="Stop",
@@ -48,8 +42,6 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        task = asyncio.Task(self.server_manager.stop_server())
-        await self.update()
-
-        await task
-        await self.update(interaction)
+        self._messages.add(interaction.message)
+        await interaction.edit(embed=please_wait_embed(), view=self)
+        await self.server_manager.stop_server()
