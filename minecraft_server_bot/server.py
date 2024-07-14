@@ -1,7 +1,7 @@
 import asyncio
 from pathlib import Path
 
-import libtmux
+from .tmux import TmuxManager
 
 
 class ServerManager:
@@ -11,7 +11,7 @@ class ServerManager:
         self.host = host
         self.port = port
         self.server_path = server_path
-        self.tmux_server = libtmux.Server()
+        self.tmux_manager = TmuxManager(session_name="minecraft_server")
 
     async def wait_for_server_start(self) -> None:
         while True:
@@ -45,31 +45,11 @@ class ServerManager:
         except asyncio.TimeoutError:
             return False
 
-    def start_tmux_session(self) -> None:
-        self.tmux_server.cmd("new-session", "-d", "-s", "minecraft_server")
-
-    @property
-    def tmux_session(self) -> libtmux.Session | None:
-        return self.tmux_server.sessions.get(name="minecraft_server")
-
-    @property
-    def tmux_window(self) -> libtmux.Window | None:
-        return self.tmux_session.windows[0]
-
-    @property
-    def tmux_pane(self) -> libtmux.Pane | None:
-        return self.tmux_window.panes[0]
-
-    def send_terminal_command(self, command: str) -> None:
-        self.tmux_pane.send_keys(command)
-
     async def run_server_start(self) -> None:
-        self.start_tmux_session()
         if await self.is_server_close(timeout=1):
-            self.send_terminal_command(f"cd {self.server_path}")
-            self.send_terminal_command("./run.sh")
+            self.tmux_manager.send_command(f"cd {self.server_path}")
+            self.tmux_manager.send_command("./run.sh")
 
     async def run_server_stop(self) -> None:
-        self.start_tmux_session()
         if await self.is_server_open(timeout=1):
-            self.send_terminal_command("stop")
+            self.tmux_manager.send_command("stop")
