@@ -1,5 +1,3 @@
-import asyncio
-
 import discord
 
 from .embeds import get_embed_for_state, please_wait_embed
