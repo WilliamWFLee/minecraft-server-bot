@@ -22,7 +22,7 @@ class ServerManager:
     async def test_connection(self) -> None:
         await asyncio.open_connection(self.host, self.port)
 
-    async def wait_for_server_start(self) -> None:
+    async def _server_started_test_loop(self) -> None:
         while True:
             try:
                 await self.test_connection()
@@ -31,7 +31,7 @@ class ServerManager:
             else:
                 return
 
-    async def wait_for_server_stop(self) -> None:
+    async def _server_stopped_test_loop(self) -> None:
         while True:
             try:
                 await self.test_connection()
@@ -40,25 +40,31 @@ class ServerManager:
             else:
                 await asyncio.sleep(0.1)
 
-    async def is_server_open(self, *, timeout: int = 30) -> bool:
+    async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
         try:
-            await asyncio.wait_for(self.wait_for_server_start(), timeout=timeout)
+            await asyncio.wait_for(self._server_started_test_loop(), timeout=timeout)
             return True
         except asyncio.TimeoutError:
             return False
 
-    async def is_server_closed(self, *, timeout: int = 30) -> bool:
+    async def wait_for_server_stop(self, *, timeout: int = 30) -> bool:
         try:
-            await asyncio.wait_for(self.wait_for_server_stop(), timeout=timeout)
+            await asyncio.wait_for(self._server_stopped_test_loop(), timeout=timeout)
             return True
         except asyncio.TimeoutError:
             return False
+
+    async def server_started(self) -> bool:
+        return await self.wait_for_server_start(timeout=1)
+
+    async def server_stopped(self) -> bool:
+        return await self.wait_for_server_stop(timeout=1)
 
     async def run_server_start(self) -> None:
-        if await self.is_server_closed(timeout=1):
+        if await self.server_stopped():
             self.tmux_manager.send_command(f"cd {self.server_path}")
             self.tmux_manager.send_command("./run.sh")
 
     async def run_server_stop(self) -> None:
-        if await self.is_server_open(timeout=1):
+        if await self.server_started():
             self.tmux_manager.send_command("stop")

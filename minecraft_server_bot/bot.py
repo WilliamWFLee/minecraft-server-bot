@@ -19,7 +19,7 @@ def initialise_bot(*, server_path):
         contexts={discord.InteractionContextType.guild},
     )
     async def embed(ctx: discord.ApplicationContext):
-        if await server_manager.is_server_open(timeout=1):
+        if await server_manager.server_started(timeout=1):
             embed = online_embed()
         else:
             embed = offline_embed()

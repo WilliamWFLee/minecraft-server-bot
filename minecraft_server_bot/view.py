@@ -14,12 +14,14 @@ class ServerView(discord.ui.View):
         style=discord.ButtonStyle.primary,
         custom_id="start_button",
     )
-    async def start(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def start_button(
+        self, button: discord.ui.Button, interaction: discord.Interaction
+    ):
         embed = starting_embed()
         await interaction.edit(embed=embed, view=self)
 
         await self.server_manager.run_server_start()
-        await self.server_manager.is_server_open()
+        await self.server_manager.wait_for_server_start()
 
         embed = online_embed()
         await interaction.edit(embed=embed, view=self)
