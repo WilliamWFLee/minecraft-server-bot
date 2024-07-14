@@ -1,8 +1,43 @@
 import asyncio
+import re
 from functools import wraps
 from pathlib import Path
 
 from .tmux import TmuxManager
+
+
+class ServerConfiguration:
+    SERVER_IP_KEY = "server-ip"
+    SERVER_PORT_KEY = "server-port"
+    SERVER_IP_REGEX = re.compile(rf"(?<={SERVER_IP_KEY}=).+")
+    SERVER_PORT_REGEX = re.compile(rf"(?<={SERVER_PORT_KEY}=)\d+")
+
+    def __init__(self, *, server_path: Path | str):
+        self.server_path = Path(server_path)
+        self._file_contents = self._load_file_contents(
+            self.server_path.joinpath("server.properties")
+        )
+
+    @staticmethod
+    def _load_file_contents(server_path: Path | str):
+        with open(server_path) as f:
+            return f.read()
+
+    @property
+    def ip(self) -> str:
+        match = self.SERVER_IP_REGEX.search(self._file_contents)
+        if match:
+            return match.group(0)
+        else:
+            return "127.0.0.1"
+
+    @property
+    def port(self) -> int:
+        match = self.SERVER_PORT_REGEX.search(self._file_contents)
+        if match:
+            return int(match.group(0))
+        else:
+            return 25565
 
 
 class ServerManager:
@@ -11,17 +46,17 @@ class ServerManager:
         *,
         server_path: Path | str,
         executable_filename: str,
-        host: str = "127.0.0.1",
-        port: int = 25565,
         tmux_manager: TmuxManager | None = None,
         session_name: str | None = None,
     ):
-        self.server_path = server_path
+        self.server_path = Path(server_path)
         self.executable_filename = executable_filename
-        self.host = host
-        self.port = port
         self.state = None
         self._lock = asyncio.Lock()
+
+        server_configuration = ServerConfiguration(server_path=self.server_path)
+        self.host = server_configuration.ip
+        self.port = server_configuration.port
 
         if not session_name:
             session_name = "minecraft_server"
