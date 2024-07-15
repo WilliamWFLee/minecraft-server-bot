@@ -7,11 +7,11 @@ Setup
 -----
 
 #. This bot uses `tmux`_ to run your server in the background, so first make sure you have this installed on your machine first.
-#. Python packages are managed by `pip`_, and you're highly encouraged to use `venv`_ or `virtualenv`_ when you install packages for this project. 
+#. Python packages are managed by `poetry`_, and you're highly encouraged to use `venv`_ or `virtualenv`_ when you install packages for this project. 
 
    Install the packages using::
 
-    pip install -r requirements.txt
+    poetry install
 
 #. Copy ``.env_template`` to ``.env``::
 
@@ -45,7 +45,7 @@ Licence
 Refer to `LICENSE`_ for the full licence text.
 
 .. _tmux: https://github.com/tmux/tmux
-.. _pip: https://pip.pypa.io/en/stable/index.html
+.. _poetry: https://python-poetry.org
 .. _venv: https://docs.python.org/3/library/venv.html
 .. _virtualenv: https://virtualenv.pypa.io/en/latest/
 .. _Discord documentation: https://discord.com/developers/

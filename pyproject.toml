@@ -4,3 +4,18 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 88
+
+[tool.poetry]
+name = "minecraft-server-bot"
+version = "0.1.0"
+description = "A Discord bot for remotely managing a Minecraft server"
+authors = ["William Lee <wlee753159@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.8"
+py-cord = "^2.6"
+python-dotenv = "^1.0"
+libtmux = "~0.37"
