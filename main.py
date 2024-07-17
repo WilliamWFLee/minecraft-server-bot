@@ -26,7 +26,7 @@ def main():
     executable_filename = os.environ.get("EXECUTABLE_FILENAME")
     if not executable_filename:
         executable_filename = "run.sh"
-    if os.access(server_path.joinpath(executable_filename), os.X_OK) is None:
+    if not os.access(server_path.joinpath(executable_filename), os.X_OK):
         raise Exception(f"Could not find '{executable_filename}' in server directory")
 
     session_name = os.environ.get("SESSION_NAME")
