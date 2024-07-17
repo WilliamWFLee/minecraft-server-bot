@@ -23,12 +23,9 @@ def initialise_bot(
     )
 
     @bot.event
-    async def on_connect():
-        await bot.change_presence(activity=activity)
-
-    @bot.event
     async def on_ready():
         await server_manager.initialise()
+        await bot.change_presence(activity=activity)
         bot.add_view(ServerView(server_manager))
 
     @bot.slash_command(
