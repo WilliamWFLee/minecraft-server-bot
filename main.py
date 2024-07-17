@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import shutil
 from pathlib import Path
 
 import dotenv
@@ -27,7 +26,7 @@ def main():
     executable_filename = os.environ.get("EXECUTABLE_FILENAME")
     if not executable_filename:
         executable_filename = "run.sh"
-    if shutil.which(server_path.joinpath(executable_filename)) is None:
+    if os.access(server_path.joinpath(executable_filename), os.X_OK) is None:
         raise Exception(f"Could not find '{executable_filename}' in server directory")
 
     session_name = os.environ.get("SESSION_NAME")
