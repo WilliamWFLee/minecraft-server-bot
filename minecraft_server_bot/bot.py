@@ -13,6 +13,7 @@ def initialise_bot(
     executable_filename: str,
     session_name: str = None,
 ):
+    activity = discord.Activity(type=discord.ActivityType.listening, name="/controls")
     intents = discord.Intents.default()
     bot = discord.Bot(intents=intents)
     server_manager = ServerManager(
@@ -20,6 +21,10 @@ def initialise_bot(
         executable_filename=executable_filename,
         session_name=session_name,
     )
+
+    @bot.event
+    async def on_connect():
+        await bot.change_presence(activity=activity)
 
     @bot.event
     async def on_ready():
@@ -30,7 +35,7 @@ def initialise_bot(
         description="Generates a fancy textbox with buttons to control the server",
         contexts={discord.InteractionContextType.guild},
     )
-    async def embed(ctx: discord.ApplicationContext):
+    async def controls(ctx: discord.ApplicationContext):
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
