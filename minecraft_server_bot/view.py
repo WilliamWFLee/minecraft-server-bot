@@ -41,6 +41,7 @@ class ServerView(discord.ui.View):
         await current_interaction.edit(embed=self.embed, view=self)
 
     @discord.ui.button(
+        emoji="🚀",
         label="Start",
         style=discord.ButtonStyle.primary,
         custom_id="start_button",
@@ -54,6 +55,7 @@ class ServerView(discord.ui.View):
         await self.controller.handle_start(interaction)
 
     @discord.ui.button(
+        emoji="⏹",
         label="Stop",
         style=discord.ButtonStyle.danger,
         custom_id="stop_button",
@@ -67,6 +69,7 @@ class ServerView(discord.ui.View):
         await self.controller.handle_stop(interaction)
 
     @discord.ui.button(
+        emoji="🔄",
         label="Restart",
         style=discord.ButtonStyle.secondary,
         custom_id="restart_button",
