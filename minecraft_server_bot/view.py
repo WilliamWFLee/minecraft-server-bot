@@ -1,20 +1,44 @@
+from typing import TYPE_CHECKING
+
 import discord
 
-from .embeds import get_embed_for_state, please_wait_embed
-from .server import ServerManager
+from .embeds import get_embed_for_state
+
+if TYPE_CHECKING:
+    from .controller import ServerController
 
 
 class ServerView(discord.ui.View):
-    def __init__(self, server_manager: ServerManager):
+    def __init__(self, controller: "ServerController"):
         super().__init__(timeout=None)
-        self.server_manager: ServerManager = server_manager
         self._messages: set[discord.Message] = set()
-        self.server_manager.listener(self.server_state_listener)
+        self.controller = controller
+        self.embed = None
 
-    async def server_state_listener(self, state: str) -> None:
-        embed = get_embed_for_state(state)
+    async def send_state(self, state: str) -> "ServerView":
+        self.embed = get_embed_for_state(state)
+        buttons_disabled = {
+            "stopped": [False, True, True],
+            "starting": [True, True, True],
+            "started": [True, False, False],
+            "stopping": [True, True, True],
+            "pending": [True, True, True],
+        }[state]
+        for custom_id, disabled in zip(
+            ["start_button", "stop_button", "restart_button"],
+            buttons_disabled,
+        ):
+            self.get_item(custom_id).disabled = disabled
+
+    async def update_messages(
+        self,
+        current_interaction: discord.Interaction | None = None,
+    ) -> "ServerView":
         for message in self._messages:
-            await message.edit(embed=embed, view=self)
+            if current_interaction and current_interaction.message == message:
+                continue
+            await message.edit(embed=self.embed, view=self)
+        await current_interaction.edit(embed=self.embed, view=self)
 
     @discord.ui.button(
         label="Start",
@@ -27,8 +51,7 @@ class ServerView(discord.ui.View):
         interaction: discord.Interaction,
     ):
         self._messages.add(interaction.message)
-        await interaction.edit(embed=please_wait_embed(), view=self)
-        await self.server_manager.start_server()
+        await self.controller.handle_start(interaction)
 
     @discord.ui.button(
         label="Stop",
@@ -41,5 +64,17 @@ class ServerView(discord.ui.View):
         interaction: discord.Interaction,
     ):
         self._messages.add(interaction.message)
-        await interaction.edit(embed=please_wait_embed(), view=self)
-        await self.server_manager.stop_server()
+        await self.controller.handle_stop(interaction)
+
+    @discord.ui.button(
+        label="Restart",
+        style=discord.ButtonStyle.secondary,
+        custom_id="restart_button",
+    )
+    async def restart_button(
+        self,
+        button: discord.ui.Button,
+        interaction: discord.Interaction,
+    ):
+        self._messages.add(interaction.message)
+        await self.controller.handle_restart(interaction)

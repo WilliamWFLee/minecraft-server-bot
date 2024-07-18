@@ -1,9 +1,6 @@
 import asyncio
 import re
-from collections.abc import Callable, Coroutine
-from functools import wraps
 from pathlib import Path
-from typing import Any
 
 from .tmux import TmuxManager
 
@@ -54,8 +51,6 @@ class ServerManager:
         self.server_path = Path(server_path)
         self.executable_filename = executable_filename
         self.state = None
-        self._listeners = []
-        self._lock = asyncio.Lock()
 
         server_configuration = ServerConfiguration(server_path=self.server_path)
         self.host = server_configuration.ip
@@ -66,15 +61,6 @@ class ServerManager:
 
         if tmux_manager is None:
             self.tmux_manager = TmuxManager(session_name=session_name)
-
-    @staticmethod
-    def with_lock(coro):
-        @wraps(coro)
-        async def inner(self: "ServerManager", *args, **kwargs):
-            async with self._lock:
-                return await coro(self, *args, **kwargs)
-
-        return inner
 
     async def _fetch_state(self) -> None:
         if await self.server_started():
@@ -103,13 +89,6 @@ class ServerManager:
             else:
                 await asyncio.sleep(0.1)
 
-    def listener(
-        self,
-        coro: Callable[[str], Coroutine[Any, Any, None]],
-    ) -> Callable[[str], Coroutine[Any, Any, None]]:
-        self._listeners.append(coro)
-        return coro
-
     async def _set_state(self, state: str) -> None:
         self._state = state
         await self._dispatch_event(state)
@@ -125,7 +104,7 @@ class ServerManager:
         except asyncio.TimeoutError:
             return False
 
-    async def wait_for_server_stop(self, *, timeout: int = 30) -> bool:
+    async def wait_for_server_stop(self, *, timeout: int = 15) -> bool:
         try:
             await asyncio.wait_for(self._server_stopped_test_loop(), timeout=timeout)
             return True
@@ -138,36 +117,18 @@ class ServerManager:
     async def server_stopped(self) -> bool:
         return await self.wait_for_server_stop(timeout=1)
 
-    @with_lock
-    async def start_server(self):
+    async def start_server(self) -> None:
         if await self.server_stopped():
-            await self._set_state("starting")
-
             self.tmux_manager.send_command(f"cd {self.server_path}")
             self.tmux_manager.send_command(f"./{self.executable_filename}")
 
-            result = await self.wait_for_server_start()
-            if result:
-                await self._set_state("started")
-            else:
-                await self._set_state("stopped")
-        else:
-            await self._set_state("started")
-
-    @with_lock
-    async def stop_server(self) -> bool:
+    async def stop_server(self) -> None:
         if await self.server_started():
-            await self._set_state("stopping")
-
             self.tmux_manager.send_command("stop")
 
-            result = await self.wait_for_server_stop()
-            if result:
-                await self._set_state("stopped")
-            else:
-                await self._set_state("started")
-        else:
-            await self._set_state("stopped")
+    async def restart_server(self) -> None:
+        await self.stop_server()
+        await self.start_server()
 
     async def initialise(self) -> None:
         await self._fetch_state()

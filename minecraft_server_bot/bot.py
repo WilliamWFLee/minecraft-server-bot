@@ -2,9 +2,8 @@ from pathlib import Path
 
 import discord
 
-from .embeds import get_embed_for_state
+from .controller import ServerController
 from .server import ServerManager
-from .view import ServerView
 
 
 def initialise_bot(
@@ -21,12 +20,13 @@ def initialise_bot(
         executable_filename=executable_filename,
         session_name=session_name,
     )
+    controller = ServerController(server_manager)
 
     @bot.event
     async def on_ready():
-        await server_manager.initialise()
         await bot.change_presence(activity=activity)
-        bot.add_view(ServerView(server_manager))
+        await controller.initialise()
+        bot.add_view(controller.view)
 
     @bot.slash_command(
         description="Generates a fancy textbox with buttons to control the server",
@@ -36,7 +36,6 @@ def initialise_bot(
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        embed = get_embed_for_state(server_manager.state)
-        await ctx.respond(embed=embed, view=ServerView(server_manager))
+        await ctx.respond(embed=controller.view.embed, view=controller.view)
 
     return bot

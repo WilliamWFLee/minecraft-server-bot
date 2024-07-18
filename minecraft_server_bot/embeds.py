@@ -38,8 +38,8 @@ def stopping_embed():
     )
 
 
-def please_wait_embed():
-    return generate_server_embed(status="Action Pending", description="⏳ Please wait")
+def pending_embed():
+    return generate_server_embed(status="Pending", description="⏳ Please wait")
 
 
 def get_embed_for_state(state: str):
@@ -48,4 +48,5 @@ def get_embed_for_state(state: str):
         "starting": starting_embed,
         "started": online_embed,
         "stopping": stopping_embed,
+        "pending": pending_embed,
     }[state]()
