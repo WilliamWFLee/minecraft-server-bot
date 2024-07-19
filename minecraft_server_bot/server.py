@@ -6,9 +6,9 @@ from .tmux import TmuxManager
 
 
 class ServerConfiguration:
-    SERVER_IP_KEY = "server-ip"
+    SERVER_HOST_KEY = "server-ip"
     SERVER_PORT_KEY = "server-port"
-    SERVER_IP_REGEX = re.compile(rf"(?<={SERVER_IP_KEY}=).+")
+    SERVER_HOST_REGEX = re.compile(rf"(?<={SERVER_HOST_KEY}=).+")
     SERVER_PORT_REGEX = re.compile(rf"(?<={SERVER_PORT_KEY}=)\d+")
 
     def __init__(self, *, server_path: Path | str):
@@ -23,8 +23,8 @@ class ServerConfiguration:
             return f.read()
 
     @property
-    def ip(self) -> str:
-        match = self.SERVER_IP_REGEX.search(self._file_contents)
+    def host(self) -> str:
+        match = self.SERVER_HOST_REGEX.search(self._file_contents)
         if match:
             return match.group(0)
         else:
@@ -51,10 +51,7 @@ class ServerManager:
         self.server_path = Path(server_path)
         self.executable_filename = executable_filename
         self.state = None
-
-        server_configuration = ServerConfiguration(server_path=self.server_path)
-        self.host = server_configuration.ip
-        self.port = server_configuration.port
+        self._config = ServerConfiguration(server_path=self.server_path)
 
         if not session_name:
             session_name = "minecraft_server"
@@ -69,7 +66,7 @@ class ServerManager:
             self.state = "stopped"
 
     async def _test_connection(self) -> None:
-        await asyncio.open_connection(self.host, self.port)
+        await asyncio.open_connection(self._config.host, self._config.port)
 
     async def _server_started_test_loop(self) -> None:
         while True:
