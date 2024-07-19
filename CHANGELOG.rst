@@ -27,6 +27,11 @@ Changed
 - Switch dependency management to use `Poetry`_.
 - Use controller to handle communication between server manager and view object.
 
+Removed
+-------
+
+- Updates for embeds and controls in messages have been stored in-memory.
+
 0.1.0 - 2024-07-14
 ==================
 
