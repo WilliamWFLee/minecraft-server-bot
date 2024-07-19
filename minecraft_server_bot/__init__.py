@@ -1,1 +1,3 @@
-from .bot import initialise_bot  # noqa: F401
+from .bot import initialise_bot
+
+__all__ = ["initialise_bot"]
