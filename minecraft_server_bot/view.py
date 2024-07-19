@@ -55,7 +55,7 @@ class ServerView(discord.ui.View):
         await self.controller.handle_start(interaction)
 
     @discord.ui.button(
-        emoji="⏹",
+        emoji="◽",
         label="Stop",
         style=discord.ButtonStyle.danger,
         custom_id="stop_button",
