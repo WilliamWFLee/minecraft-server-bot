@@ -39,6 +39,11 @@ Simply run the bot by executing ``main.py``::
 
     ./main.py
 
+Changelog
+---------
+
+See `CHANGELOG.rst`.
+
 Licence
 -------
 
@@ -50,3 +55,4 @@ Refer to `LICENSE`_ for the full licence text.
 .. _virtualenv: https://virtualenv.pypa.io/en/latest/
 .. _Discord documentation: https://discord.com/developers/
 .. _LICENSE: LICENSE
+.. _CHANGELOG.rst: CHANGELOG.rst
