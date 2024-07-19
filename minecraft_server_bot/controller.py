@@ -12,40 +12,44 @@ class ServerController:
     async def initialise(self) -> None:
         self.view = ServerView(self)
         await self.server_manager.initialise()
-        await self.view.send_state(self.server_manager.state)
+        await self.view.render(self.server_manager.state)
 
-    async def handle_start(self, interaction: discord.Interaction):
-        await self._update_view("pending", interaction)
+    async def handle_start(self, interaction: discord.Interaction) -> None:
+        await self.view.render("pending", interaction)
+
         await self.server_manager.start_server()
-        await self._update_view("starting", interaction)
-        if await self.server_manager.wait_for_server_start():
-            await self._update_view("started", interaction)
-        else:
-            await self._update_view("stopped", interaction)
+        await self.view.render("starting", interaction)
 
-    async def handle_stop(self, interaction: discord.Interaction):
-        await self._update_view("pending", interaction)
-        await self.server_manager.stop_server()
-        await self._update_view("stopping", interaction)
-        if await self.server_manager.wait_for_server_stop():
-            await self._update_view("stopped", interaction)
+        if await self.server_manager.wait_for_server_start():
+            await self.view.render("started", interaction)
         else:
-            await self._update_view("started", interaction)
+            await self.view.render("stopped", interaction)
+
+    async def handle_stop(self, interaction: discord.Interaction) -> None:
+        await self.view.render("pending", interaction)
+
+        await self.server_manager.stop_server()
+        await self.view.render("stopping", interaction)
+
+        if await self.server_manager.wait_for_server_stop():
+            await self.view.render("stopped", interaction)
+        else:
+            await self.view.render("started", interaction)
 
     async def handle_restart(self, interaction: discord.Interaction):
-        await self._update_view("pending", interaction)
-        await self.server_manager.stop_server()
-        await self._update_view("stopping", interaction)
-        if await self.server_manager.wait_for_server_stop():
-            await self.server_manager.start_server()
-            await self._update_view("starting", interaction)
-            if await self.server_manager.wait_for_server_start():
-                await self._update_view("started", interaction)
-            else:
-                await self._update_view("stopped", interaction)
-        else:
-            await self._update_view("started", interaction)
+        await self.view.render("pending", interaction)
 
-    async def _update_view(self, state: str, interaction: discord.Interaction):
-        await self.view.send_state(state)
-        await self.view.update_messages(current_interaction=interaction)
+        await self.server_manager.stop_server()
+        await self.view.render("stopping", interaction)
+
+        if not await self.server_manager.wait_for_server_stop():
+            await self.view.render("started", interaction)
+            return
+
+        await self.server_manager.start_server()
+        await self.view.render("starting", interaction)
+
+        if await self.server_manager.wait_for_server_start():
+            await self.view.render("started", interaction)
+        else:
+            await self.view.render("stopped", interaction)

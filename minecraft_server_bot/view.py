@@ -11,11 +11,14 @@ if TYPE_CHECKING:
 class ServerView(discord.ui.View):
     def __init__(self, controller: "ServerController"):
         super().__init__(timeout=None)
-        self._messages: set[discord.Message] = set()
         self.controller = controller
         self.embed = None
 
-    async def send_state(self, state: str) -> "ServerView":
+    async def render(
+        self,
+        state: str,
+        current_interaction: discord.Interaction | None = None,
+    ) -> "ServerView":
         self.embed = get_embed_for_state(state)
         buttons_disabled = {
             "stopped": [False, True, True],
@@ -30,14 +33,8 @@ class ServerView(discord.ui.View):
         ):
             self.get_item(custom_id).disabled = disabled
 
-    async def update_messages(
-        self,
-        current_interaction: discord.Interaction | None = None,
-    ) -> "ServerView":
-        for message in self._messages:
-            if current_interaction and current_interaction.message == message:
-                continue
-            await message.edit(embed=self.embed, view=self)
+        if current_interaction is None:
+            return
         await current_interaction.edit(embed=self.embed, view=self)
 
     @discord.ui.button(
@@ -51,7 +48,6 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        self._messages.add(interaction.message)
         await self.controller.handle_start(interaction)
 
     @discord.ui.button(
@@ -65,7 +61,6 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        self._messages.add(interaction.message)
         await self.controller.handle_stop(interaction)
 
     @discord.ui.button(
@@ -79,5 +74,4 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        self._messages.add(interaction.message)
         await self.controller.handle_restart(interaction)
