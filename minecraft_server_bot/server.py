@@ -86,14 +86,6 @@ class ServerManager:
             else:
                 await asyncio.sleep(0.1)
 
-    async def _set_state(self, state: str) -> None:
-        self._state = state
-        await self._dispatch_event(state)
-
-    async def _dispatch_event(self, state: str) -> None:
-        for listener in self._listeners:
-            await listener(state)
-
     async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
         try:
             await asyncio.wait_for(self._server_started_test_loop(), timeout=timeout)
@@ -122,10 +114,6 @@ class ServerManager:
     async def stop_server(self) -> None:
         if await self.server_started():
             self.tmux_manager.send_command("stop")
-
-    async def restart_server(self) -> None:
-        await self.stop_server()
-        await self.start_server()
 
     async def initialise(self) -> None:
         await self._fetch_state()
