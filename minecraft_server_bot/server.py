@@ -13,30 +13,28 @@ class ServerConfiguration:
 
     def __init__(self, *, server_path: Path | str):
         self.server_path = Path(server_path)
-        self._file_contents = self._load_file_contents(
-            self.server_path.joinpath("server.properties")
-        )
+        self._read_server_properties()
 
     @staticmethod
     def _load_file_contents(server_path: Path | str):
         with open(server_path) as f:
             return f.read()
 
-    @property
-    def host(self) -> str:
-        match = self.SERVER_HOST_REGEX.search(self._file_contents)
+    def _read_server_properties(self) -> None:
+        contents = self._load_file_contents(
+            self.server_path.joinpath("server.properties")
+        )
+        match = self.SERVER_HOST_REGEX.search(contents)
         if match:
-            return match.group(0)
+            self.host = match.group(0)
         else:
-            return "127.0.0.1"
+            self.host = "127.0.0.1"
 
-    @property
-    def port(self) -> int:
-        match = self.SERVER_PORT_REGEX.search(self._file_contents)
+        match = self.SERVER_PORT_REGEX.search(contents)
         if match:
-            return int(match.group(0))
+            self.port = int(match.group(0))
         else:
-            return 25565
+            self.port = 25565
 
 
 class ServerManager:
