@@ -6,6 +6,7 @@ from pathlib import Path
 import dotenv
 
 from minecraft_server_bot import initialise_bot
+from settings import TORTOISE_ORM
 
 dotenv.load_dotenv()
 
@@ -34,6 +35,7 @@ def main():
         server_path=server_path,
         executable_filename=executable_filename,
         session_name=session_name,
+        database_config=TORTOISE_ORM,
     )
     bot.run(token)
 

@@ -1,8 +1,12 @@
 from pathlib import Path
 
 import discord
+from tortoise import transactions
 
 from .controller import ServerController
+from .database import initialise_database
+from .messages import delete_existing_guild_message
+from .models import BotMessage
 from .server import ServerManager
 
 
@@ -11,6 +15,7 @@ def initialise_bot(
     server_path: Path | str,
     executable_filename: str,
     session_name: str = None,
+    database_config: dict,
 ):
     activity = discord.Activity(type=discord.ActivityType.listening, name="/controls")
     intents = discord.Intents.default()
@@ -26,6 +31,7 @@ def initialise_bot(
     async def on_ready():
         await bot.change_presence(activity=activity)
         await controller.initialise()
+        await initialise_database(database_config)
         bot.add_view(controller.view)
 
     @bot.slash_command(
@@ -36,6 +42,21 @@ def initialise_bot(
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        await ctx.respond(embed=controller.view.embed, view=controller.view)
+
+        interaction = await ctx.respond(
+            embed=controller.view.embed, view=controller.view
+        )
+        message = await interaction.original_response()
+        async with transactions.in_transaction():
+            await delete_existing_guild_message(
+                guild=message.guild,
+                message_type="controls",
+            )
+            await BotMessage.create(
+                guild_id=message.guild.id,
+                channel_id=message.channel.id,
+                message_id=message.id,
+                message_type="controls",
+            )
 
     return bot
