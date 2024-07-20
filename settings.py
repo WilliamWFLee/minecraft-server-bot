@@ -1,9 +1,15 @@
+import os
+
+database_name = os.environ.get("DATABASE_NAME")
+if not database_name:
+    database_name = "minecraft_server_bot"
+
 TORTOISE_ORM = {
     "connections": {
         "default": {
             "engine": "tortoise.backends.asyncpg",
             "credentials": {
-                "database": "minecraft_server_bot",
+                "database": f"{database_name}",
             },
         }
     },
@@ -14,3 +20,5 @@ TORTOISE_ORM = {
         },
     },
 }
+
+__all__ = ["TORTOISE_ORM"]
