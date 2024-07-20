@@ -18,6 +18,7 @@ Added
 - Add `pm2`_ ecosystem file for launching bot using `pm2`_.
 - Add Bot presence activity status.
 - Add emoji to buttons.
+- Add cleanup of ``/controls`` embed so that there is only one embed per server by storing previous messages in a database.
 
 Changed
 -------
