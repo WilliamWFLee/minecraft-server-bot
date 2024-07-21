@@ -6,7 +6,7 @@ from .mods import Mod
 from .tmux import TmuxManager
 
 
-class ServerConfiguration:
+class ServerInfo:
     SERVER_HOST_KEY = "server-ip"
     SERVER_PORT_KEY = "server-port"
     SERVER_HOST_REGEX = re.compile(rf"(?<={SERVER_HOST_KEY}=).+")
@@ -14,7 +14,23 @@ class ServerConfiguration:
 
     def __init__(self, *, server_path: Path | str):
         self.server_path = Path(server_path)
+        self._mods = []
         self._read_server_properties()
+
+    @property
+    def mods(self) -> list[Mod]:
+        return sorted(
+            (
+                Mod.from_jar(path)
+                for path in self.server_path.joinpath("mods").glob("*.jar")
+            ),
+            key=lambda mod: mod.name,
+        )
+
+    @property
+    def _latest_log_lines(self) -> str:
+        with open(self.server_path.joinpath("logs", "latest.log")) as file:
+            return file.readlines()
 
     @staticmethod
     def _load_file_contents(server_path: Path | str):
@@ -38,22 +54,6 @@ class ServerConfiguration:
             self.port = 25565
 
 
-class ServerInfo:
-    def __init__(self, *, server_path: Path | str):
-        self.server_path = Path(server_path)
-        self._mods = []
-
-    @property
-    def mods(self) -> list[Mod]:
-        return sorted(
-            (
-                Mod.from_jar(path)
-                for path in self.server_path.joinpath("mods").glob("*.jar")
-            ),
-            key=lambda mod: mod.name,
-        )
-
-
 class ServerManager:
     def __init__(
         self,
@@ -67,7 +67,6 @@ class ServerManager:
         self.executable_filename = executable_filename
         self.state = None
         self.info = ServerInfo(server_path=self.server_path)
-        self._config = ServerConfiguration(server_path=self.server_path)
 
         if not session_name:
             session_name = "minecraft_server"
@@ -82,7 +81,7 @@ class ServerManager:
             self.state = "stopped"
 
     async def _test_connection(self) -> None:
-        await asyncio.open_connection(self._config.host, self._config.port)
+        await asyncio.open_connection(self.info.host, self.info.port)
 
     async def _server_started_test_loop(self) -> None:
         while True:
