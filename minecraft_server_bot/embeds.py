@@ -8,7 +8,7 @@ from .mods import Mod
 def generate_base_embed():
     timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     embed = discord.Embed()
-    embed.set_footer(text=f"Date and time generated: {timestamp}")
+    embed.set_footer(text=f"Last updated: {timestamp}")
 
     return embed
 
