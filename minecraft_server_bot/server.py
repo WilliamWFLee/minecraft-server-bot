@@ -2,6 +2,7 @@ import asyncio
 import re
 from pathlib import Path
 
+from .mods import Mod
 from .tmux import TmuxManager
 
 
@@ -43,12 +44,13 @@ class ServerInfo:
         self._mods = []
 
     @property
-    def mods(self) -> list[str]:
+    def mods(self) -> list[Mod]:
         if not self._mods:
-            self._mods = sorted(
-                str(path.name.rstrip(".jar"))
+            self._mods = [
+                Mod.from_jar(path)
                 for path in self.server_path.joinpath("mods").glob("*.jar")
-            )
+            ]
+            self._mods = sorted(self._mods, key=lambda mod: mod.name)
         return self._mods
 
 

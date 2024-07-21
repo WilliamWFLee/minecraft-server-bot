@@ -67,12 +67,16 @@ def initialise_bot(
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        embed = discord.Embed(title="Minecraft Server")
+        embed = discord.Embed(title="Mods")
         if not server_manager.info.mods:
             await ctx.respond("There are no mods loaded.")
         else:
             for mod in server_manager.info.mods:
-                embed.add_field(name="Mod", value=f"Filename: {mod}", inline=False)
+                embed.add_field(
+                    name=mod.name,
+                    value=f"Version: {mod.version}",
+                    inline=False,
+                )
             await ctx.respond(embed=embed)
 
     return bot
