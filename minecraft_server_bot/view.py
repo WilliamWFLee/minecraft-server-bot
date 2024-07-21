@@ -40,6 +40,7 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
+        await interaction.response.defer()
         await self.controller.handle_start()
 
     @discord.ui.button(
@@ -53,6 +54,7 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
+        await interaction.response.defer()
         await self.controller.handle_stop()
 
     @discord.ui.button(
@@ -66,4 +68,5 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
+        await interaction.response.defer()
         await self.controller.handle_restart()
