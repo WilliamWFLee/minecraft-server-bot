@@ -37,6 +37,21 @@ class ServerConfiguration:
             self.port = 25565
 
 
+class ServerInfo:
+    def __init__(self, *, server_path: Path | str):
+        self.server_path = Path(server_path)
+        self._mods = []
+
+    @property
+    def mods(self) -> list[str]:
+        if not self._mods:
+            self._mods = sorted(
+                str(path.name.rstrip(".jar"))
+                for path in self.server_path.joinpath("mods").glob("*.jar")
+            )
+        return self._mods
+
+
 class ServerManager:
     def __init__(
         self,
@@ -49,6 +64,7 @@ class ServerManager:
         self.server_path = Path(server_path)
         self.executable_filename = executable_filename
         self.state = None
+        self.info = ServerInfo(server_path=self.server_path)
         self._config = ServerConfiguration(server_path=self.server_path)
 
         if not session_name:

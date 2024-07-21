@@ -59,4 +59,20 @@ def initialise_bot(
                 message_type="controls",
             )
 
+    @bot.slash_command(
+        description="Shows the mods loaded on the server",
+        contexts={discord.InteractionContextType.guild},
+    )
+    async def mods(ctx: discord.ApplicationContext):
+        if not ctx.bot.is_ready():
+            await ctx.defer()
+            await ctx.bot.wait_until_ready()
+        embed = discord.Embed(title="Minecraft Server")
+        if not server_manager.info.mods:
+            await ctx.respond("There are no mods loaded.")
+        else:
+            for mod in server_manager.info.mods:
+                embed.add_field(name="Mod", value=f"Filename: {mod}", inline=False)
+            await ctx.respond(embed=embed)
+
     return bot
