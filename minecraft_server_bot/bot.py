@@ -68,7 +68,7 @@ def initialise_bot(
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        mods = server_manager.info.mods
+        mods = server_manager.info.get_mods()
         if not mods:
             await ctx.respond("There are no mods loaded.")
         else:

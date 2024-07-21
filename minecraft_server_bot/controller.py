@@ -1,6 +1,7 @@
 import asyncio
 
 import discord
+from discord.ext import tasks
 from tortoise.queryset import QuerySet
 
 from minecraft_server_bot.messages import fetch_message_from_record
@@ -16,25 +17,44 @@ class ServerController:
     ) -> None:
         self.client = client
         self.server_manager: ServerManager = server_manager
+        self.server_manager.add_state_listener(self.server_state_handler)
         self.view: ServerView
 
     async def initialise(self) -> None:
         self.view = ServerView(self)
         await self.server_manager.initialise()
-        await self.render_and_update(self.server_manager.state)
+        await self._render_and_update_view(self.server_manager.state)
+        self.refresh_server_state_task.start()
+
+    async def server_state_handler(self, state: str) -> None:
+        await self._render_and_update_view(state)
+
+    @tasks.loop(seconds=15)
+    async def refresh_server_state_task(self):
+        await self.server_manager.info.update()
+        await self._render_and_update_view(self.server_manager.state)
+
+    async def handle_start(self) -> None:
+        await self.server_manager.start_server()
+
+    async def handle_stop(self) -> None:
+        await self.server_manager.stop_server()
+
+    async def handle_restart(self):
+        await self.server_manager.restart_server()
 
     @property
-    async def all_controls_messages(self) -> QuerySet[BotMessage]:
+    async def _all_controls_messages(self) -> QuerySet[BotMessage]:
         return await BotMessage.filter(message_type="controls")
 
-    async def render_and_update(self, state: str):
-        await self.view.render(state)
+    async def _render_and_update_view(self, state: str):
+        await self.view.render(state=state, server_info=self.server_manager.info)
         messages: list[discord.Message] = filter(
             None,
             await asyncio.gather(
                 *(
                     fetch_message_from_record(record=record, client=self.client)
-                    for record in await self.all_controls_messages
+                    for record in await self._all_controls_messages
                 )
             ),
         )
@@ -44,43 +64,3 @@ class ServerController:
                 for message in messages
             )
         )
-
-    async def handle_start(self) -> None:
-        await self.render_and_update("pending")
-
-        await self.server_manager.start_server()
-        await self.render_and_update("starting")
-
-        if await self.server_manager.wait_for_server_start():
-            await self.render_and_update("started")
-        else:
-            await self.render_and_update("stopped")
-
-    async def handle_stop(self) -> None:
-        await self.render_and_update("pending")
-
-        await self.server_manager.stop_server()
-        await self.render_and_update("stopping")
-
-        if await self.server_manager.wait_for_server_stop():
-            await self.render_and_update("stopped")
-        else:
-            await self.render_and_update("started")
-
-    async def handle_restart(self):
-        await self.render_and_update("pending")
-
-        await self.server_manager.stop_server()
-        await self.render_and_update("stopping")
-
-        if not await self.server_manager.wait_for_server_stop():
-            await self.render_and_update("started")
-            return
-
-        await self.server_manager.start_server()
-        await self.render_and_update("starting")
-
-        if await self.server_manager.wait_for_server_start():
-            await self.render_and_update("started")
-        else:
-            await self.render_and_update("stopped")

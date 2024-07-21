@@ -3,6 +3,7 @@ import datetime as dt
 import discord
 
 from .mods import Mod
+from .server import ServerInfo
 
 
 def generate_base_embed():
@@ -13,57 +14,33 @@ def generate_base_embed():
     return embed
 
 
-def generate_server_embed(*, status: str, description: str):
+def get_embed_for_server(*, state: str, server_info: ServerInfo):
+    status, description = {
+        "stopped": ("Offline", "⛔ Server is offline"),
+        "starting": ("Starting", "⏳ Server is being started"),
+        "started": ("Online", "🚀 Server is online"),
+        "stopping": ("Stopping", "⏳ Server is being stopped"),
+        "pending": ("Pending", "⏳ Please wait"),
+    }[state]
+
     embed = generate_base_embed()
     embed.title = "Minecraft Server"
     embed.description = description
     embed.add_field(name="Status", value=status, inline=True)
-    embed.add_field(name="Player count", value=0, inline=True)
-    embed.add_field(name="Players", value="thing", inline=True)
+    if state == "started":
+        embed.add_field(
+            name="Player count",
+            value=server_info.player_count,
+            inline=True,
+        )
+        if server_info.player_count:
+            embed.add_field(
+                name="Players",
+                value="\n".join([f"- {player}" for player in server_info.players]),
+                inline=False,
+            )
 
     return embed
-
-
-def offline_embed():
-    return generate_server_embed(
-        status="Offline",
-        description="⛔ Server is offline",
-    )
-
-
-def starting_embed():
-    return generate_server_embed(
-        status="Starting",
-        description="⏳ Server is being started",
-    )
-
-
-def online_embed():
-    return generate_server_embed(
-        status="Online",
-        description="🚀 Server is online",
-    )
-
-
-def stopping_embed():
-    return generate_server_embed(
-        status="Stopping",
-        description="⏳ Server is being stopped",
-    )
-
-
-def pending_embed():
-    return generate_server_embed(status="Pending", description="⏳ Please wait")
-
-
-def get_embed_for_server_state(state: str):
-    return {
-        "stopped": offline_embed,
-        "starting": starting_embed,
-        "started": online_embed,
-        "stopping": stopping_embed,
-        "pending": pending_embed,
-    }[state]()
 
 
 def get_mods_embed(mods: list[Mod]):
