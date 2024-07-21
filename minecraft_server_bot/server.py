@@ -45,10 +45,13 @@ class ServerInfo:
 
     @property
     def mods(self) -> list[Mod]:
-        return [
-            Mod.from_jar(path)
-            for path in self.server_path.joinpath("mods").glob("*.jar")
-        ]
+        return sorted(
+            (
+                Mod.from_jar(path)
+                for path in self.server_path.joinpath("mods").glob("*.jar")
+            ),
+            key=lambda mod: mod.name,
+        )
 
 
 class ServerManager:

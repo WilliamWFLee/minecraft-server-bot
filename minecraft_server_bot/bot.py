@@ -5,6 +5,7 @@ from tortoise import transactions
 
 from .controller import ServerController
 from .database import initialise_database
+from .embeds import get_mods_embed
 from .messages import delete_existing_guild_message
 from .models import BotMessage
 from .server import ServerManager
@@ -67,16 +68,10 @@ def initialise_bot(
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        embed = discord.Embed(title="Mods")
-        if not server_manager.info.mods:
+        mods = server_manager.info.mods
+        if not mods:
             await ctx.respond("There are no mods loaded.")
         else:
-            for mod in server_manager.info.mods:
-                embed.add_field(
-                    name=mod.name,
-                    value=f"Version: {mod.version}",
-                    inline=False,
-                )
-            await ctx.respond(embed=embed)
+            await ctx.respond(embed=get_mods_embed(mods))
 
     return bot

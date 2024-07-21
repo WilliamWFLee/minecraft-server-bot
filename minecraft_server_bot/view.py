@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import discord
 
-from .embeds import get_embed_for_state
+from .embeds import get_embed_for_server_state
 
 if TYPE_CHECKING:
     from .controller import ServerController
@@ -19,7 +19,7 @@ class ServerView(discord.ui.View):
         state: str,
         current_interaction: discord.Interaction | None = None,
     ) -> "ServerView":
-        self.embed = get_embed_for_state(state)
+        self.embed = get_embed_for_server_state(state)
         buttons_disabled = {
             "stopped": [False, True, True],
             "starting": [True, True, True],
