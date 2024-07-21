@@ -15,25 +15,28 @@ Unreleased
 Added
 -----
 
-- Add ``/mods`` command that displays information about mods on the server.
-- Add Bot presence activity status.
-- Add emoji to buttons.
+- Added ``/mods`` command that displays information about mods on the server.
+- Added Bot presence activity status.
+- Added emoji to buttons.
+- Added player count and player list to ``/controls`` (formerly ``/embed``) embed.
 
-- Add `pm2`_ ecosystem file for launching bot using `pm2`_.
+- Added event-based system for sending updates in server state from server manager to controller.
+- Added controller to handle communication between server manager and view object.
+
+- Added `pm2`_ ecosystem file for launching bot using `pm2`_.
 
 Changed
 -------
 
 - Renamed ``/embed`` command to ``/controls`` to make the command more descriptive.
-- Switch from `shutil.which` to `os.access` to determine if server `./run.sh` is executable.
-- Switch dependency management to use `Poetry`_.
-- Use controller to handle communication between server manager and view object.
-- Clean up ``/controls`` embed so that there is only one embed per server by storing previous messages in a database.
+- Switched from `shutil.which` to `os.access` to determine if server `./run.sh` is executable.
+- Switched dependency management to use `Poetry`_.
+- Cleaned up ``/controls`` embed so that there is only one embed per server by storing previous messages in a database.
 
 Removed
 -------
 
-- In-memory store of messages for updating messages.
+- Removed in-memory store of messages for updating messages.
 
 0.1.0 - 2024-07-14
 ==================
