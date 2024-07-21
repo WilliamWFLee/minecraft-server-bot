@@ -26,13 +26,13 @@ def initialise_bot(
         executable_filename=executable_filename,
         session_name=session_name,
     )
-    controller = ServerController(server_manager)
+    controller = ServerController(server_manager=server_manager, client=bot)
 
     @bot.event
     async def on_ready():
+        await initialise_database(database_config)
         await bot.change_presence(activity=activity)
         await controller.initialise()
-        await initialise_database(database_config)
         bot.add_view(controller.view)
 
     @bot.slash_command(

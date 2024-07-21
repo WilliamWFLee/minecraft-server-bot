@@ -14,11 +14,7 @@ class ServerView(discord.ui.View):
         self.controller = controller
         self.embed = None
 
-    async def render(
-        self,
-        state: str,
-        current_interaction: discord.Interaction | None = None,
-    ) -> "ServerView":
+    async def render(self, state: str) -> "ServerView":
         self.embed = get_embed_for_server_state(state)
         buttons_disabled = {
             "stopped": [False, True, True],
@@ -33,10 +29,6 @@ class ServerView(discord.ui.View):
         ):
             self.get_item(custom_id).disabled = disabled
 
-        if current_interaction is None:
-            return
-        await current_interaction.edit(embed=self.embed, view=self)
-
     @discord.ui.button(
         emoji="🚀",
         label="Start",
@@ -48,7 +40,7 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        await self.controller.handle_start(interaction)
+        await self.controller.handle_start()
 
     @discord.ui.button(
         emoji="◽",
@@ -61,7 +53,7 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        await self.controller.handle_stop(interaction)
+        await self.controller.handle_stop()
 
     @discord.ui.button(
         emoji="🔄",
@@ -74,4 +66,4 @@ class ServerView(discord.ui.View):
         button: discord.ui.Button,
         interaction: discord.Interaction,
     ):
-        await self.controller.handle_restart(interaction)
+        await self.controller.handle_restart()
