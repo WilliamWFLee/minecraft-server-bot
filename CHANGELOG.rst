@@ -4,9 +4,10 @@ Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on `Keep a Changelog`_, adapted to reStructuredText, and this project adheres to `Semantic Versioning`.
+The format is based on `Keep a Changelog`_, adapted to reStructuredText and using `PEP 440`_ instead of `Semantic Versioning`_ while still keeping the core major, minor, patch semantics.
 
 .. _Keep a Changelog: https://keepachangelog.com/en/1.1.0/
+.. _PEP 440: https://peps.python.org/pep-0440/
 .. _Semantic Versioning: https://semver.org/spec/v2.0.0.html
 
 Unreleased
@@ -16,9 +17,11 @@ Added
 -----
 
 - Added ``/mods`` command that displays information about mods on the server.
+- Added player count and player list to ``/controls`` (formerly ``/embed``) embed.
+- Added restart button to server controls.
+- Added contextual disabling of server control buttons depending on server status and player count.
 - Added Bot presence activity status.
 - Added emoji to buttons.
-- Added player count and player list to ``/controls`` (formerly ``/embed``) embed.
 
 - Added event-based system for sending updates in server state from server manager to controller.
 - Added controller to handle communication between server manager and view object.
