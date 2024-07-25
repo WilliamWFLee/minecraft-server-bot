@@ -33,6 +33,15 @@ def get_embed_for_server(*, state: str, server_info: ServerInfo):
             value=server_info.player_count,
             inline=True,
         )
+        embed.add_field(
+            name="Address",
+            value=(
+                server_info.public_address
+                if server_info.public_address is not None
+                else "-"
+            ),
+            inline=True,
+        )
         if server_info.player_count:
             embed.add_field(
                 name="Players",

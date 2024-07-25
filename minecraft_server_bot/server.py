@@ -6,6 +6,7 @@ from typing import Any
 
 from discord.ext import tasks
 
+from .ipify import get_ip
 from .mods import Mod
 from .tmux import TmuxManager
 
@@ -22,18 +23,24 @@ class ServerInfo:
         r"(?P<player_count>\d+)(?: of a max of \d+ players online:)"
         r"((?:\s+)(?P<player_list>\w+(,\s+\w+)*))?"
     )
+    DEFAULT_PORT = 25565
 
     def __init__(self, *, server_path: Path | str, server_manager: "ServerManager"):
         self.server_path = Path(server_path)
         self.server_manager = server_manager
         self.player_count = 0
         self.players = []
+        self.public_ip = None
         self._read_server_properties()
 
-    @staticmethod
-    def _load_file_contents(server_path: Path | str):
-        with open(server_path) as f:
-            return f.read()
+    @property
+    def public_address(self) -> str:
+        if self.public_ip is None:
+            return None
+        elif self.port == self.DEFAULT_PORT:
+            return f"{self.public_ip}"
+        else:
+            return f"{self.public_ip}:{self.port}"
 
     def get_mods(self) -> list[Mod]:
         return sorted(
@@ -44,10 +51,18 @@ class ServerInfo:
             key=lambda mod: mod.name,
         )
 
-    async def update(self) -> None:
-        await self._update_player_info()
+    async def update(self, *scopes: list[str]) -> None:
+        if "players" in scopes:
+            await self._update_player_info()
+        if "address" in scopes:
+            await self._update_public_ip()
 
-    async def _update_player_info(self) -> str:
+    @staticmethod
+    def _load_file_contents(server_path: Path | str):
+        with open(server_path) as f:
+            return f.read()
+
+    async def _update_player_info(self) -> None:
         if await self.server_manager.send_server_command("list"):
             for line in reversed(self._latest_log_lines()):
                 match = self.PLAYER_INFO_REGEX.search(line)
@@ -65,6 +80,12 @@ class ServerInfo:
         else:
             self.player_count = 0
             self.players = []
+
+    async def _update_public_ip(self) -> None:
+        try:
+            self.public_ip = await get_ip()
+        except Exception:
+            self.public_ip = None
 
     def _latest_log_lines(self) -> str:
         with open(self.server_path.joinpath("logs", "latest.log")) as file:
@@ -84,7 +105,7 @@ class ServerInfo:
         if match:
             self.port = int(match.group(0))
         else:
-            self.port = 25565
+            self.port = self.DEFAULT_PORT
 
 
 class ServerManager:
@@ -110,7 +131,7 @@ class ServerManager:
             self.tmux_manager = TmuxManager(session_name=session_name)
 
     async def initialise(self) -> None:
-        await self.info.update()
+        await self.info.update("players", "address")
         await self._initialise_state()
         self.refresh_state_task.start()
 
@@ -119,7 +140,7 @@ class ServerManager:
 
     @tasks.loop(seconds=1)
     async def refresh_state_task(self):
-        await self.info.update()
+        await self.info.update("players")
         await self._dispatch_update()
 
     async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
@@ -186,12 +207,14 @@ class ServerManager:
         self.tmux_manager.send_command(command)
         return True
 
-    async def _dispatch_update(self) -> None:
-        await asyncio.gather(*(listener() for listener in self._listeners))
-
     async def _update_state(self, state: str) -> None:
         self.state = state
+        if self.state == "started":
+            await self.info.update("address")
         await self._dispatch_update()
+
+    async def _dispatch_update(self) -> None:
+        await asyncio.gather(*(listener() for listener in self._listeners))
 
     async def _test_connection(self) -> None:
         await asyncio.open_connection(self.info.host, self.info.port)

@@ -1,5 +1,9 @@
 import os
 
+import dotenv
+
+dotenv.load_dotenv()
+
 database_name = os.environ.get("DATABASE_NAME")
 if not database_name:
     database_name = "minecraft_server_bot"
