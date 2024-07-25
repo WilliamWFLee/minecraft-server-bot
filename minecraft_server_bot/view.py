@@ -20,7 +20,9 @@ class ServerView(discord.ui.View):
         buttons_disabled = {
             "stopped": [False, True, True],
             "starting": [True, True, True],
-            "started": [True, False, False],
+            "started": (
+                [True, True, True] if server_info.player_count else [True, False, False]
+            ),
             "stopping": [True, True, True],
             "pending": [True, True, True],
         }[state]
