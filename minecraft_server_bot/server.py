@@ -4,6 +4,8 @@ from collections.abc import Callable, Coroutine
 from pathlib import Path
 from typing import Any
 
+from discord.ext import tasks
+
 from .mods import Mod
 from .tmux import TmuxManager
 
@@ -98,7 +100,8 @@ class ServerManager:
         self.executable_filename = executable_filename
         self.state = None
         self.info = ServerInfo(server_path=self.server_path, server_manager=self)
-        self._state_listeners: list[StateListener] = []
+        self._state_lock = asyncio.Lock()
+        self._listeners: list[StateListener] = []
 
         if not session_name:
             session_name = "minecraft_server"
@@ -109,9 +112,15 @@ class ServerManager:
     async def initialise(self) -> None:
         await self.info.update()
         await self._initialise_state()
+        self.refresh_state_task.start()
 
-    def add_state_listener(self, coro: StateListener) -> None:
-        self._state_listeners.append(coro)
+    def add_listener(self, coro: StateListener) -> None:
+        self._listeners.append(coro)
+
+    @tasks.loop(seconds=1)
+    async def refresh_state_task(self):
+        await self.info.update()
+        await self._dispatch_update()
 
     async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
         try:
@@ -177,14 +186,12 @@ class ServerManager:
         self.tmux_manager.send_command(command)
         return True
 
-    async def _dispatch_state_update(self) -> None:
-        await asyncio.gather(
-            *(listener(self.state) for listener in self._state_listeners)
-        )
+    async def _dispatch_update(self) -> None:
+        await asyncio.gather(*(listener() for listener in self._listeners))
 
     async def _update_state(self, state: str) -> None:
         self.state = state
-        await self._dispatch_state_update()
+        await self._dispatch_update()
 
     async def _test_connection(self) -> None:
         await asyncio.open_connection(self.info.host, self.info.port)
