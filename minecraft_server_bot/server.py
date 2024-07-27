@@ -138,7 +138,7 @@ class ServerManager:
     def add_listener(self, coro: StateListener) -> None:
         self._listeners.append(coro)
 
-    @tasks.loop(seconds=1)
+    @tasks.loop(seconds=5)
     async def refresh_state_task(self):
         await self.info.update("players")
         await self._dispatch_update()
