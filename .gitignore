@@ -128,6 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Poetry config
+poetry.toml
+
 # IDEs
 .vscode/
 .idea/
