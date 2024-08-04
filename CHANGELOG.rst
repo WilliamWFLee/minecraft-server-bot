@@ -32,8 +32,8 @@ Changed
 -------
 
 - Renamed ``/embed`` command to ``/controls`` to make the command more descriptive.
-- Switched from `shutil.which` to `os.access` to determine if server `./run.sh` is executable.
 - Switched dependency management to use `Poetry`_.
+- Switched from `shutil.which` to `os.access` to determine if server `./run.sh` is executable.
 - Cleaned up ``/controls`` embed so that there is only one embed per server by storing previous messages in a database.
 
 Removed
