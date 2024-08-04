@@ -118,8 +118,9 @@ class ServerManager:
         session_name: str | None = None,
     ):
         self.server_path = Path(server_path)
-        self.executable_filename = executable_filename
-        self.state = None
+        self.executable_filename: str = executable_filename
+        self.state: str | None = None
+        self.server_online: bool = False
         self.info = ServerInfo(server_path=self.server_path, server_manager=self)
         self._state_lock = asyncio.Lock()
         self._listeners: list[StateListener] = []
@@ -131,12 +132,19 @@ class ServerManager:
             self.tmux_manager = TmuxManager(session_name=session_name)
 
     async def initialise(self) -> None:
-        await self.info.update("players", "address")
         await self._initialise_state()
-        self.refresh_state_task.start()
+        await self.info.update("players", "address")
+        if not self.refresh_state_task.is_running():
+            self.refresh_state_task.start()
+        if not self.update_server_online_task.is_running():
+            self.update_server_online_task.start()
 
     def add_listener(self, coro: StateListener) -> None:
         self._listeners.append(coro)
+
+    @tasks.loop(seconds=0.1)
+    async def update_server_online_task(self):
+        self.server_online = await self._test_connection()
 
     @tasks.loop(seconds=5)
     async def refresh_state_task(self):
@@ -157,15 +165,9 @@ class ServerManager:
         except asyncio.TimeoutError:
             return False
 
-    async def server_started(self) -> bool:
-        return await self.wait_for_server_start(timeout=1)
-
-    async def server_stopped(self) -> bool:
-        return await self.wait_for_server_stop(timeout=1)
-
     async def start_server(self) -> None:
         await self._update_state("pending")
-        if await self.server_stopped():
+        if not self.server_online:
             self.tmux_manager.send_command(f"cd {self.server_path}")
             self.tmux_manager.send_command(f"./{self.executable_filename}")
             await self._update_state("starting")
@@ -176,7 +178,7 @@ class ServerManager:
 
     async def stop_server(self) -> None:
         await self._update_state("pending")
-        if await self.server_started():
+        if self.server_online:
             self.tmux_manager.send_command("stop")
             await self._update_state("stopping")
         if await self.wait_for_server_stop():
@@ -186,7 +188,7 @@ class ServerManager:
 
     async def restart_server(self) -> None:
         await self._update_state("pending")
-        if await self.server_started():
+        if await self.server_online:
             self.tmux_manager.send_command("stop")
             await self._update_state("stopping")
         if await self.wait_for_server_stop():
@@ -202,7 +204,7 @@ class ServerManager:
             await self._update_state("started")
 
     async def send_server_command(self, command: str) -> bool:
-        if await self.server_stopped():
+        if not self.server_online:
             return False
         self.tmux_manager.send_command(command)
         return True
@@ -216,29 +218,26 @@ class ServerManager:
     async def _dispatch_update(self) -> None:
         await asyncio.gather(*(listener() for listener in self._listeners))
 
-    async def _test_connection(self) -> None:
-        await asyncio.open_connection(self.info.host, self.info.port)
+    async def _test_connection(self) -> bool:
+        try:
+            _, writer = await asyncio.open_connection(self.info.host, self.info.port)
+        except ConnectionError:
+            return False
+        else:
+            writer.close()
+            await writer.wait_closed()
+            return True
 
     async def _server_started_test_loop(self) -> None:
-        while True:
-            try:
-                await self._test_connection()
-            except ConnectionRefusedError:
-                await asyncio.sleep(0.1)
-            else:
-                return
+        while not self.server_online:
+            await asyncio.sleep(0.1)
 
     async def _server_stopped_test_loop(self) -> None:
-        while True:
-            try:
-                await self._test_connection()
-            except ConnectionRefusedError:
-                return
-            else:
-                await asyncio.sleep(0.1)
+        while self.server_online:
+            await asyncio.sleep(0.1)
 
     async def _initialise_state(self) -> None:
-        if await self.server_started():
+        if self.server_online:
             self.state = "started"
         else:
             self.state = "stopped"
