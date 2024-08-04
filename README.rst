@@ -43,9 +43,9 @@ First, run the migrations to update your database schema::
 
     aerich upgrade
 
-Then you can run the bot by executing ``main.py``::
+Then you can run the Bash script ``run.sh`` which uses Poetry to run ``main.py``, so there's no need to activate a virtualenv::
 
-    ./main.py
+    ./run.sh
 
 Changelog
 ---------
