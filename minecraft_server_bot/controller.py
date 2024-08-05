@@ -16,7 +16,7 @@ class ServerController:
     ) -> None:
         self.client = client
         self.server_manager: ServerManager = server_manager
-        self.server_manager.add_listener(self.server_handler)
+        self.server_manager.add_listener(self.server_listener)
         self.view: ServerView
 
     async def initialise(self) -> None:
@@ -24,7 +24,7 @@ class ServerController:
         await self.server_manager.initialise()
         await self._render_and_update_view()
 
-    async def server_handler(self) -> None:
+    async def server_listener(self, server_manager: ServerManager) -> None:
         await self._render_and_update_view()
 
     async def handle_start(self) -> None:

@@ -7,31 +7,40 @@ from typing import Any
 from discord.ext import tasks
 
 from .ipify import get_ip
+from .mixins import UpdateDispatcherMixin
 from .mods import Mod
 from .tmux import TmuxManager
 
-StateListener = Callable[[str], Coroutine[Any, Any, None]]
+ServerManagerListener = Callable[[], Coroutine[Any, Any, None]]
+ServerInfoListener = Callable[[], Coroutine[Any, Any, None]]
 
 
-class ServerInfo:
+class ServerInfo(UpdateDispatcherMixin):
     SERVER_HOST_KEY = "server-ip"
     SERVER_PORT_KEY = "server-port"
     SERVER_HOST_REGEX = re.compile(rf"(?<={SERVER_HOST_KEY}=).+")
     SERVER_PORT_REGEX = re.compile(rf"(?<={SERVER_PORT_KEY}=)\d+")
     PLAYER_INFO_REGEX = re.compile(
-        r"(?:There are )"
-        r"(?P<player_count>\d+)(?: of a max of \d+ players online:)"
+        r"(?:There are \d+ of a max of \d+ players online:)"
         r"((?:\s+)(?P<player_list>\w+(,\s+\w+)*))?"
     )
     DEFAULT_PORT = 25565
 
     def __init__(self, *, server_path: Path | str, server_manager: "ServerManager"):
+        super().__init__()
         self.server_path = Path(server_path)
         self.server_manager = server_manager
         self.player_count = 0
         self.players = []
         self.public_ip = None
         self._read_server_properties()
+        if not self.update_players_task.is_running():
+            self.update_players_task.start()
+
+    @tasks.loop(seconds=5)
+    async def update_players_task(self):
+        if await self.update_player_info():
+            await self._dispatch_update()
 
     @property
     def public_address(self) -> str:
@@ -51,37 +60,39 @@ class ServerInfo:
             key=lambda mod: mod.name,
         )
 
-    async def update(self, *scopes: list[str]) -> None:
+    async def update(self, *scopes: list[str]) -> bool:
         if "players" in scopes:
-            await self._update_player_info()
+            await self.update_player_info()
         if "address" in scopes:
-            await self._update_public_ip()
+            await self.update_public_ip()
 
     @staticmethod
     def _load_file_contents(server_path: Path | str):
         with open(server_path) as f:
             return f.read()
 
-    async def _update_player_info(self) -> None:
+    async def update_player_info(self) -> None:
+        players = None
         if await self.server_manager.send_server_command("list"):
             for line in reversed(self._latest_log_lines()):
                 match = self.PLAYER_INFO_REGEX.search(line)
                 if not match:
                     continue
-                self.player_count = int(match.group("player_count"))
-                if self.player_count:
-                    self.players = [
-                        player.strip()
-                        for player in match.group("player_list").split(",")
-                    ]
+                if (player_list := match.group("player_list")) is None:
+                    players = []
                 else:
-                    self.players = []
+                    players = [player.strip() for player in player_list.split(",")]
                 break
-        else:
-            self.player_count = 0
-            self.players = []
+        if players is None:
+            players = []
 
-    async def _update_public_ip(self) -> None:
+        if sorted(players) != sorted(self.players):
+            self.player_count = len(players)
+            self.players = players
+            return True
+        return False
+
+    async def update_public_ip(self) -> None:
         try:
             self.public_ip = await get_ip()
         except Exception:
@@ -108,7 +119,7 @@ class ServerInfo:
             self.port = self.DEFAULT_PORT
 
 
-class ServerManager:
+class ServerManager(UpdateDispatcherMixin):
     def __init__(
         self,
         *,
@@ -117,13 +128,14 @@ class ServerManager:
         tmux_manager: TmuxManager | None = None,
         session_name: str | None = None,
     ):
+        super().__init__()
         self.server_path = Path(server_path)
         self.executable_filename: str = executable_filename
         self.state: str | None = None
         self.server_online: bool = False
         self.info = ServerInfo(server_path=self.server_path, server_manager=self)
+        self.info.add_listener(self._server_info_handler)
         self._state_lock = asyncio.Lock()
-        self._listeners: list[StateListener] = []
 
         if not session_name:
             session_name = "minecraft_server"
@@ -133,23 +145,14 @@ class ServerManager:
 
     async def initialise(self) -> None:
         await self._initialise_state()
-        await self.info.update("players", "address")
-        if not self.refresh_state_task.is_running():
-            self.refresh_state_task.start()
+        await self.info.update_player_info()
+        await self.info.update_public_ip()
         if not self.update_server_online_task.is_running():
             self.update_server_online_task.start()
-
-    def add_listener(self, coro: StateListener) -> None:
-        self._listeners.append(coro)
 
     @tasks.loop(seconds=0.1)
     async def update_server_online_task(self):
         self.server_online = await self._test_connection()
-
-    @tasks.loop(seconds=5)
-    async def refresh_state_task(self):
-        await self.info.update("players")
-        await self._dispatch_update()
 
     async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
         try:
@@ -209,14 +212,14 @@ class ServerManager:
         self.tmux_manager.send_command(command)
         return True
 
+    async def _server_info_handler(self, server_info: ServerInfo) -> None:
+        await self._dispatch_update()
+
     async def _update_state(self, state: str) -> None:
         self.state = state
         if self.state == "started":
-            await self.info.update("address")
+            await self.info.update_public_ip()
         await self._dispatch_update()
-
-    async def _dispatch_update(self) -> None:
-        await asyncio.gather(*(listener() for listener in self._listeners))
 
     async def _test_connection(self) -> bool:
         try:
