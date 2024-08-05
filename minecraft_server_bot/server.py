@@ -132,7 +132,6 @@ class ServerManager(UpdateDispatcherMixin):
         self.server_path = Path(server_path)
         self.executable_filename: str = executable_filename
         self.state: str | None = None
-        self.server_online: bool = False
         self.info = ServerInfo(server_path=self.server_path, server_manager=self)
         self.info.add_listener(self._server_info_handler)
         self._state_lock = asyncio.Lock()
@@ -147,12 +146,6 @@ class ServerManager(UpdateDispatcherMixin):
         await self._initialise_state()
         await self.info.update_player_info()
         await self.info.update_public_ip()
-        if not self.update_server_online_task.is_running():
-            self.update_server_online_task.start()
-
-    @tasks.loop(seconds=0.1)
-    async def update_server_online_task(self):
-        self.server_online = await self._test_connection()
 
     async def wait_for_server_start(self, *, timeout: int = 30) -> bool:
         try:
@@ -170,7 +163,7 @@ class ServerManager(UpdateDispatcherMixin):
 
     async def start_server(self) -> None:
         await self._update_state("pending")
-        if not self.server_online:
+        if not await self._server_online():
             self.tmux_manager.send_command(f"cd {self.server_path}")
             self.tmux_manager.send_command(f"./{self.executable_filename}")
             await self._update_state("starting")
@@ -181,7 +174,7 @@ class ServerManager(UpdateDispatcherMixin):
 
     async def stop_server(self) -> None:
         await self._update_state("pending")
-        if self.server_online:
+        if await self._server_online():
             self.tmux_manager.send_command("stop")
             await self._update_state("stopping")
         if await self.wait_for_server_stop():
@@ -191,7 +184,7 @@ class ServerManager(UpdateDispatcherMixin):
 
     async def restart_server(self) -> None:
         await self._update_state("pending")
-        if await self.server_online:
+        if await self._server_online():
             self.tmux_manager.send_command("stop")
             await self._update_state("stopping")
         if await self.wait_for_server_stop():
@@ -207,10 +200,13 @@ class ServerManager(UpdateDispatcherMixin):
             await self._update_state("started")
 
     async def send_server_command(self, command: str) -> bool:
-        if not self.server_online:
+        if not await self._server_online():
             return False
         self.tmux_manager.send_command(command)
         return True
+
+    async def _server_online(self):
+        return await self._test_connection()
 
     async def _server_info_handler(self, server_info: ServerInfo) -> None:
         await self._dispatch_update()
@@ -232,15 +228,15 @@ class ServerManager(UpdateDispatcherMixin):
             return True
 
     async def _server_started_test_loop(self) -> None:
-        while not self.server_online:
+        while not await self._server_online():
             await asyncio.sleep(0.1)
 
     async def _server_stopped_test_loop(self) -> None:
-        while self.server_online:
+        while await self._server_online():
             await asyncio.sleep(0.1)
 
     async def _initialise_state(self) -> None:
-        if self.server_online:
+        if await self._server_online():
             self.state = "started"
         else:
             self.state = "stopped"
