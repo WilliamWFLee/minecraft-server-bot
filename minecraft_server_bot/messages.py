@@ -31,6 +31,9 @@ async def delete_existing_guild_message(
     ).first()
     if record is not None:
         channel = await guild.fetch_channel(record.channel_id)
-        existing_message = await channel.fetch_message(record.message_id)
-        await existing_message.delete()
+        try:
+            existing_message = await channel.fetch_message(record.message_id)
+            await existing_message.delete()
+        except discord.NotFound:
+            pass
         await record.delete()
