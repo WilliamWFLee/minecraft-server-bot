@@ -72,7 +72,7 @@ class ServerConsole:
         self.server_state = server_state
 
     @staticmethod
-    def require_offline(coro):
+    def _require_offline(coro):
         @wraps(coro)
         async def inner(self, *args, **kwargs):
             if await self.server_state.online():
@@ -83,7 +83,7 @@ class ServerConsole:
         return inner
 
     @staticmethod
-    def require_online(coro):
+    def _require_online(coro):
         @wraps(coro)
         async def inner(self, *args, **kwargs) -> bool:
             if not await self.server_state.online():
@@ -93,16 +93,16 @@ class ServerConsole:
 
         return inner
 
-    @require_offline
+    @_require_offline
     async def start_command(self):
         self.tmux_manager.send_command(f"cd {self.server_path}")
         self.tmux_manager.send_command(f"./{self.executable_filename}")
 
-    @require_online
+    @_require_online
     async def stop_command(self):
         self.tmux_manager.send_command("stop")
 
-    @require_online
+    @_require_online
     async def list_players(self):
         self.tmux_manager.send_command("list")
 
@@ -168,11 +168,11 @@ class ServerInfo(UpdateDispatcherMixin):
         self = cls(server_path=server_path, server_console=server_console)
         if await server_state.online():
             await self.update_public_ip()
-        self.update_players_task.start()
+        self._update_players_task.start()
         return self
 
     @tasks.loop(seconds=5)
-    async def update_players_task(self):
+    async def _update_players_task(self):
         if await self.update_player_info():
             await self._dispatch_update()
 
@@ -216,9 +216,11 @@ class ServerManager(UpdateDispatcherMixin):
         server_console: ServerConsole,
     ):
         super().__init__()
+        self.previous_state: str | None = None
         self.state: str | None = None
         self.server_state = server_state
         self.server_console = server_console
+        self._state_lock = asyncio.Lock()
 
     @classmethod
     async def create(
@@ -227,9 +229,19 @@ class ServerManager(UpdateDispatcherMixin):
         server_console: ServerConsole,
     ) -> "ServerManager":
         self = cls(server_state=server_state, server_console=server_console)
-        await self._initialise_state()
+        self._update_state_task.start()
         return self
 
+    @staticmethod
+    def _with_state_lock(coro):
+        @wraps(coro)
+        async def inner(self, *args, **kwargs):
+            async with self._state_lock:
+                return await coro(self, *args, **kwargs)
+
+        return inner
+
+    @_with_state_lock
     async def start_server(self) -> None:
         await self._update_state("pending")
         if not await self.server_state.online():
@@ -240,6 +252,7 @@ class ServerManager(UpdateDispatcherMixin):
         else:
             await self._update_state("stopped")
 
+    @_with_state_lock
     async def stop_server(self) -> None:
         await self._update_state("pending")
         if await self.server_state.online():
@@ -250,6 +263,7 @@ class ServerManager(UpdateDispatcherMixin):
         else:
             await self._update_state("started")
 
+    @_with_state_lock
     async def restart_server(self) -> None:
         await self._update_state("pending")
         if await self.server_state.online():
@@ -266,12 +280,16 @@ class ServerManager(UpdateDispatcherMixin):
         else:
             await self._update_state("started")
 
-    async def _update_state(self, state: str) -> None:
-        self.state = state
-        await self._dispatch_update()
-
-    async def _initialise_state(self) -> None:
+    @tasks.loop(seconds=0.1)
+    @_with_state_lock
+    async def _update_state_task(self) -> None:
         if await self.server_state.online():
-            self.state = "started"
+            await self._update_state("started")
         else:
-            self.state = "stopped"
+            await self._update_state("stopped")
+
+    async def _update_state(self, state: str) -> None:
+        self.previous_state = self.state
+        self.state = state
+        if self.previous_state != state:
+            await self._dispatch_update()

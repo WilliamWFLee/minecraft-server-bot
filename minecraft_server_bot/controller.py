@@ -58,7 +58,6 @@ class ServerController:
 
         self.server_manager.add_listener(self.server_listener)
         self.server_info.add_listener(self.server_listener)
-        await self._render_and_update_view()
 
         return self
 
