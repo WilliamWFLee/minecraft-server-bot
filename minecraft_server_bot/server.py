@@ -151,11 +151,11 @@ class ServerInfo(UpdateDispatcherMixin):
 
     def __init__(self, *, server_path: Path, server_console: ServerConsole) -> None:
         super().__init__()
-        self.server_path = server_path
-        self.server_console = server_console
-        self.player_count = 0
-        self.players = []
-        self.public_ip = None
+        self.server_path: Path = server_path
+        self.server_console: ServerConsole = server_console
+        self.player_count: int = 0
+        self.players: list[str] = []
+        self.public_ip: str | None = None
 
     @classmethod
     async def create(
@@ -218,9 +218,9 @@ class ServerManager(UpdateDispatcherMixin):
         super().__init__()
         self.previous_state: str | None = None
         self.state: str | None = None
-        self.server_state = server_state
-        self.server_console = server_console
-        self._state_lock = asyncio.Lock()
+        self.server_state: ServerState = server_state
+        self.server_console: ServerConsole = server_console
+        self._state_lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
     async def create(

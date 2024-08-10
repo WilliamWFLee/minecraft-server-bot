@@ -19,7 +19,14 @@ from .view import ServerView
 
 class ServerController:
     def __init__(self, *, client: discord.Client) -> None:
-        self.client = client
+        self.client: discord.Client = client
+        self._ready: asyncio.Event = asyncio.Event()
+        self.server_configuration: ServerConfiguration
+        self.server_state: ServerState
+        self.server_console: ServerConsole
+        self.server_info: ServerInfo
+        self.server_manager: ServerManager
+        self.view: ServerView
 
     @classmethod
     async def create(
@@ -29,7 +36,7 @@ class ServerController:
         session_name: str,
         server_path: Path | str,
         executable_filename: str
-    ) -> None:
+    ) -> "ServerController":
         server_path = Path(server_path)
 
         self = cls(client=client)
@@ -58,7 +65,6 @@ class ServerController:
 
         self.server_manager.add_listener(self.server_listener)
         self.server_info.add_listener(self.server_listener)
-
         return self
 
     async def server_listener(self, _) -> None:
@@ -72,8 +78,11 @@ class ServerController:
     async def handle_stop(self) -> None:
         await self.server_manager.stop_server()
 
-    async def handle_restart(self):
+    async def handle_restart(self) -> None:
         await self.server_manager.restart_server()
+
+    async def wait_until_ready(self) -> None:
+        await self._ready.wait()
 
     @property
     async def _all_controls_messages(self) -> QuerySet[BotMessage]:
@@ -81,6 +90,7 @@ class ServerController:
 
     async def _render_and_update_view(self):
         await self.view.render()
+        self._ready.set()
         messages: list[discord.Message] = filter(
             None,
             await asyncio.gather(
