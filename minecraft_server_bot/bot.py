@@ -8,44 +8,60 @@ from .database import initialise_database
 from .embeds import get_mods_embed
 from .messages import delete_existing_guild_message
 from .models import BotMessage
-from .server import ServerManager
 
 
-def initialise_bot(
-    *,
-    server_path: Path | str,
-    executable_filename: str,
-    session_name: str = None,
-    database_config: dict,
-):
-    activity = discord.Activity(type=discord.ActivityType.listening, name="/controls")
-    intents = discord.Intents.default()
-    bot = discord.Bot(intents=intents)
-    server_manager = ServerManager(
-        server_path=server_path,
-        executable_filename=executable_filename,
-        session_name=session_name,
-    )
-    controller = ServerController(server_manager=server_manager, client=bot)
+class BotApplication(discord.Bot):
+    def __init__(
+        self,
+        *,
+        server_path: Path | str,
+        executable_filename: str,
+        session_name: str = None,
+        database_config: dict,
+    ):
+        intents = discord.Intents.default()
+        super().__init__(intents=intents)
 
-    @bot.event
-    async def on_ready():
-        await initialise_database(database_config)
-        await bot.change_presence(activity=activity)
-        await controller.initialise()
-        bot.add_view(controller.view)
+        self.server_path = server_path
+        self.executable_filename = executable_filename
+        self.session_name = session_name
+        self.database_config = database_config
 
-    @bot.slash_command(
-        description="Generates a fancy textbox with buttons to control the server",
-        contexts={discord.InteractionContextType.guild},
-    )
-    async def controls(ctx: discord.ApplicationContext):
+        self.application_command(
+            name="controls",
+            description="Generates a fancy textbox with buttons to control the server",
+            contexts={discord.InteractionContextType.guild},
+        )(self.controls_command)
+
+        self.application_command(
+            name="mods",
+            description="Shows the mods loaded on the server",
+            contexts={discord.InteractionContextType.guild},
+        )(self.mods_command)
+
+    async def on_ready(self):
+        await initialise_database(self.database_config)
+        activity = discord.Activity(
+            type=discord.ActivityType.listening,
+            name="/controls",
+        )
+        self.controller = await ServerController.create(
+            client=self,
+            session_name=self.session_name,
+            server_path=self.server_path,
+            executable_filename=self.executable_filename,
+        )
+        self.add_view(self.controller.view)
+        await self.change_presence(activity=activity)
+
+    async def controls_command(self, ctx: discord.ApplicationContext):
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
 
         interaction = await ctx.respond(
-            embed=controller.view.embed, view=controller.view
+            embed=self.controller.view.embed,
+            view=self.controller.view,
         )
         message = await interaction.original_response()
         async with transactions.in_transaction():
@@ -60,18 +76,13 @@ def initialise_bot(
                 message_type="controls",
             )
 
-    @bot.slash_command(
-        description="Shows the mods loaded on the server",
-        contexts={discord.InteractionContextType.guild},
-    )
-    async def mods(ctx: discord.ApplicationContext):
+    async def mods_command(self, ctx: discord.ApplicationContext):
         if not ctx.bot.is_ready():
             await ctx.defer()
             await ctx.bot.wait_until_ready()
-        mods = server_manager.info.get_mods()
+
+        mods = self.controller.server_configuration.get_mods()
         if not mods:
             await ctx.respond("There are no mods loaded.")
         else:
             await ctx.respond(embed=get_mods_embed(mods))
-
-    return bot

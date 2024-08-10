@@ -5,7 +5,7 @@ from pathlib import Path
 
 import dotenv
 
-from minecraft_server_bot import initialise_bot
+from minecraft_server_bot import BotApplication
 from settings import TORTOISE_ORM
 
 dotenv.load_dotenv()
@@ -31,13 +31,13 @@ def main():
         raise Exception(f"Could not find '{executable_filename}' in server directory")
 
     session_name = os.environ.get("SESSION_NAME")
-    bot = initialise_bot(
+    app = BotApplication(
         server_path=server_path,
         executable_filename=executable_filename,
         session_name=session_name,
         database_config=TORTOISE_ORM,
     )
-    bot.run(token)
+    app.run(token)
 
 
 if __name__ == "__main__":

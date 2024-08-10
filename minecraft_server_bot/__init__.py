@@ -1,3 +1,3 @@
-from .bot import initialise_bot
+from .bot import BotApplication
 
-__all__ = ["initialise_bot"]
+__all__ = ["BotApplication"]

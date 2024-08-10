@@ -3,7 +3,9 @@ import datetime as dt
 import discord
 
 from .mods import Mod
-from .server import ServerInfo
+from .server import ServerConfiguration, ServerInfo
+
+DEFAULT_PORT = 25565
 
 
 def generate_base_embed():
@@ -14,7 +16,21 @@ def generate_base_embed():
     return embed
 
 
-def get_embed_for_server(*, state: str, server_info: ServerInfo):
+def display_public_address(public_ip: str | None, port: int) -> str:
+    if public_ip is None:
+        return None
+    elif port == DEFAULT_PORT:
+        return f"{public_ip}"
+    else:
+        return f"{public_ip}:{port}"
+
+
+def get_embed_for_server(
+    *,
+    state: str,
+    server_info: ServerInfo,
+    server_configuration: ServerConfiguration,
+):
     status, description = {
         "stopped": ("Offline", "⛔ Server is offline"),
         "starting": ("Starting", "⏳ Server is being started"),
@@ -22,6 +38,9 @@ def get_embed_for_server(*, state: str, server_info: ServerInfo):
         "stopping": ("Stopping", "⏳ Server is being stopped"),
         "pending": ("Pending", "⏳ Please wait"),
     }[state]
+    public_address = display_public_address(
+        server_info.public_ip, server_configuration.port
+    )
 
     embed = generate_base_embed()
     embed.title = "Minecraft Server"
@@ -35,11 +54,7 @@ def get_embed_for_server(*, state: str, server_info: ServerInfo):
         )
         embed.add_field(
             name="Address",
-            value=(
-                server_info.public_address
-                if server_info.public_address is not None
-                else "-"
-            ),
+            value=(public_address if public_address is not None else "-"),
             inline=True,
         )
         if server_info.player_count:

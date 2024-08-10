@@ -1,4 +1,5 @@
 import asyncio
+from pathlib import Path
 
 import discord
 from tortoise.queryset import QuerySet
@@ -6,25 +7,64 @@ from tortoise.queryset import QuerySet
 from minecraft_server_bot.messages import fetch_message_from_record
 
 from .models import BotMessage
-from .server import ServerManager
+from .server import (
+    ServerConfiguration,
+    ServerConsole,
+    ServerInfo,
+    ServerManager,
+    ServerState,
+)
 from .view import ServerView
 
 
 class ServerController:
-    def __init__(
-        self, *, server_manager: ServerManager, client: discord.Client
-    ) -> None:
+    def __init__(self, *, client: discord.Client) -> None:
         self.client = client
-        self.server_manager: ServerManager = server_manager
-        self.server_manager.add_listener(self.server_listener)
-        self.view: ServerView
 
-    async def initialise(self) -> None:
+    @classmethod
+    async def create(
+        cls,
+        *,
+        client: discord.Client,
+        session_name: str,
+        server_path: Path | str,
+        executable_filename: str
+    ) -> None:
+        server_path = Path(server_path)
+
+        self = cls(client=client)
+        self.server_configuration = ServerConfiguration(server_path=server_path)
+        self.server_configuration.load()
+        self.server_state = await ServerState.create(
+            host=self.server_configuration.host,
+            port=self.server_configuration.port,
+        )
+        self.server_console = ServerConsole(
+            session_name=session_name,
+            server_path=server_path,
+            executable_filename=executable_filename,
+            server_state=self.server_state,
+        )
+        self.server_info = await ServerInfo.create(
+            server_path=server_path,
+            server_state=self.server_state,
+            server_console=self.server_console,
+        )
+        self.server_manager = await ServerManager.create(
+            server_state=self.server_state,
+            server_console=self.server_console,
+        )
         self.view = ServerView(self)
-        await self.server_manager.initialise()
+
+        self.server_manager.add_listener(self.server_listener)
+        self.server_info.add_listener(self.server_listener)
         await self._render_and_update_view()
 
-    async def server_listener(self, server_manager: ServerManager) -> None:
+        return self
+
+    async def server_listener(self, _) -> None:
+        if self.server_manager.state == "started":
+            await self.server_info.update_public_ip()
         await self._render_and_update_view()
 
     async def handle_start(self) -> None:
@@ -41,10 +81,7 @@ class ServerController:
         return await BotMessage.filter(message_type="controls")
 
     async def _render_and_update_view(self):
-        await self.view.render(
-            state=self.server_manager.state,
-            server_info=self.server_manager.info,
-        )
+        await self.view.render()
         messages: list[discord.Message] = filter(
             None,
             await asyncio.gather(
