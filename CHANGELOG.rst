@@ -33,13 +33,13 @@ Changed
 
 - Renamed ``/embed`` command to ``/controls`` to make the command more descriptive.
 - Switched dependency management to use `Poetry`_.
-- Switched from `shutil.which` to `os.access` to determine if server `./run.sh` is executable.
+- Switched from ``shutil.which`` to ``os.access`` to determine if server ``./run.sh`` is executable.
 - Cleaned up ``/controls`` embed so that there is only one embed per server by storing previous messages in a database.
 
 Fixed
 -----
 
-- ``tmux`` sessions not having the correct permissions to call `systemd-inhibit` if used to stop a machine from sleeping while the Minecraft server is running, if the session is created while the Python virtualenv is activated.
+- ``tmux`` sessions not having the correct permissions to call ``systemd-inhibit`` if used to stop a machine from sleeping while the Minecraft server is running, if the session is created while the Python virtualenv is activated.
 
 Removed
 -------
