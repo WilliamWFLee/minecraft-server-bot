@@ -43,9 +43,11 @@ First, run the migrations to update your database schema::
 
     aerich upgrade
 
-Then you can run the Bash script ``run.sh`` which uses Poetry to run ``main.py``, so there's no need to activate a virtualenv::
+Then you can run the Bash script ``run.sh``::
 
     ./run.sh
+
+Do not ``main.py`` directly.
 
 Changelog
 ---------
