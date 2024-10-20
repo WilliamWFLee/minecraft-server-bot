@@ -28,7 +28,7 @@ class Mod:
                 data = json.load(file.open("fabric.mod.json"))
                 return cls.from_fabric_data(data)
             elif "META-INF/mods.toml" in members:
-                for encoding in ["utf-8", "cp-1252"]:
+                for encoding in ["utf-8", "cp1252"]:
                     try:
                         file_contents = (
                             file.open("META-INF/mods.toml").read().decode(encoding)
