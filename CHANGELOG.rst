@@ -22,6 +22,7 @@ Added
 - Added contextual disabling of server control buttons depending on server status and player count.
 - Added Bot presence activity status.
 - Added emoji to buttons.
+- Added ``MAX_WAIT_FOR_ONLINE`` configuration option, for servers that take a long time to start.
 
 - Added event-based system for sending updates in server state from server manager to controller.
 - Added controller to handle communication between server manager and view object.

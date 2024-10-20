@@ -18,13 +18,15 @@ class BotApplication:
         *,
         server_path: Path | str,
         executable_filename: str,
-        session_name: str = None,
+        session_name: str | None = None,
         database_config: dict,
+        max_wait_for_online: int = 30,
     ):
         self.server_path: Path = server_path
         self.executable_filename: str = executable_filename
         self.session_name: str | None = session_name
         self.database_config: dict = database_config
+        self.max_wait_for_online = max_wait_for_online
         self._ready: asyncio.Event = asyncio.Event()
         self._initialise_bot()
 
@@ -55,6 +57,7 @@ class BotApplication:
                 session_name=self.session_name,
                 server_path=self.server_path,
                 executable_filename=self.executable_filename,
+                max_wait_for_online=self.max_wait_for_online,
             )
             self.client.add_view(self.controller.view)
             await self.client.change_presence(activity=activity)

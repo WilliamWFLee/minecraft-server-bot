@@ -31,11 +31,13 @@ def main():
         raise Exception(f"Could not find '{executable_filename}' in server directory")
 
     session_name = os.environ.get("SESSION_NAME")
+    max_wait_for_online = int(os.environ.get("MAX_WAIT_FOR_ONLINE", 30))
     app = BotApplication(
         server_path=server_path,
         executable_filename=executable_filename,
         session_name=session_name,
         database_config=TORTOISE_ORM,
+        max_wait_for_online=max_wait_for_online,
     )
     app.run(token)
 

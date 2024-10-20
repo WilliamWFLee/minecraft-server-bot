@@ -32,6 +32,7 @@ Setup
 
    - ``SESSION_NAME`` is the name of the ``tmux``` session that the bot will use to manage the session. If the name is blank, or not set then the default is ``minecraft_server``.
    - ``DATABASE_NAME`` is the name of the database on will be used by the bot. By default this is ``minecraft_server_bot``.
+   - ``MAX_WAIT_FOR_ONLINE`` is the maximum time in seconds that the bot will wait for the server to be online before showing that the server has not been started. Can be useful for servers with a long startup.
 
 #. Create the database with the name under the ``DATABASE_NAME`` key in your configuration.
 

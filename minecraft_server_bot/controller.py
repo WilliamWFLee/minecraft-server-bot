@@ -35,7 +35,8 @@ class ServerController:
         client: discord.Client,
         session_name: str,
         server_path: Path | str,
-        executable_filename: str
+        executable_filename: str,
+        max_wait_for_online: int,
     ) -> "ServerController":
         server_path = Path(server_path)
 
@@ -60,6 +61,7 @@ class ServerController:
         self.server_manager = await ServerManager.create(
             server_state=self.server_state,
             server_console=self.server_console,
+            max_wait_for_online=max_wait_for_online,
         )
         self.view = ServerView(self)
 

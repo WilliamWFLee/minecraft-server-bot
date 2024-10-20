@@ -214,12 +214,14 @@ class ServerManager(UpdateDispatcherMixin):
         *,
         server_state: ServerState,
         server_console: ServerConsole,
+        max_wait_for_online: int,
     ):
         super().__init__()
         self.previous_state: str | None = None
         self.state: str | None = None
         self.server_state: ServerState = server_state
         self.server_console: ServerConsole = server_console
+        self.max_wait_for_online = max_wait_for_online
         self._state_lock: asyncio.Lock = asyncio.Lock()
 
     @classmethod
@@ -227,8 +229,13 @@ class ServerManager(UpdateDispatcherMixin):
         cls,
         server_state: ServerState,
         server_console: ServerConsole,
+        max_wait_for_online: int,
     ) -> "ServerManager":
-        self = cls(server_state=server_state, server_console=server_console)
+        self = cls(
+            server_state=server_state,
+            server_console=server_console,
+            max_wait_for_online=max_wait_for_online,
+        )
         self._update_state_task.start()
         return self
 
@@ -247,7 +254,9 @@ class ServerManager(UpdateDispatcherMixin):
         if not await self.server_state.online():
             await self.server_console.start_command()
             await self._update_state("starting")
-        if await self.server_state.wait_for_server_start():
+        if await self.server_state.wait_for_server_start(
+            timeout=self.max_wait_for_online
+        ):
             await self._update_state("started")
         else:
             await self._update_state("stopped")
@@ -273,7 +282,9 @@ class ServerManager(UpdateDispatcherMixin):
             await self._update_state("stopped")
             await self.server_console.start_command()
             await self._update_state("starting")
-            if await self.server_state.wait_for_server_start():
+            if await self.server_state.wait_for_server_start(
+                timeout=self.max_wait_for_online
+            ):
                 await self._update_state("started")
             else:
                 await self._update_state("stopped")
