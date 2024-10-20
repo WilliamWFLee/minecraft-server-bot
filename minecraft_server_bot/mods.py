@@ -18,11 +18,7 @@ class Mod:
 
     @classmethod
     def from_forge_data(cls, data: dict[str, Any]) -> "Mod":
-        return cls(
-            name=data["mods"]["displayName"],
-            version=data["mods"]["version"],
-            loader="forge",
-        )
+        return cls(name=data["displayName"], version=data["version"], loader="forge")
 
     @classmethod
     def from_jar(cls, path: Path | str) -> "Mod":
@@ -33,4 +29,6 @@ class Mod:
                 return cls.from_fabric_data(data)
             elif "META-INF/mods.toml" in members:
                 data = toml.loads(file.open("META-INF/mods.toml").read().decode())
-                return cls.from_forge_data(data)
+                mods_data = data["mods"]
+                for mod_data in mods_data:
+                    return cls.from_forge_data(mod_data)
