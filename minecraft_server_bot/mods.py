@@ -28,7 +28,15 @@ class Mod:
                 data = json.load(file.open("fabric.mod.json"))
                 return cls.from_fabric_data(data)
             elif "META-INF/mods.toml" in members:
-                data = toml.loads(file.open("META-INF/mods.toml").read().decode())
-                mods_data = data["mods"]
-                for mod_data in mods_data:
-                    return cls.from_forge_data(mod_data)
+                for encoding in ["utf-8", "cp-1252"]:
+                    try:
+                        file_contents = (
+                            file.open("META-INF/mods.toml").read().decode(encoding)
+                        )
+                        data = toml.loads(file_contents)
+                    except ValueError:
+                        continue
+                    else:
+                        mods_data = data["mods"]
+                        for mod_data in mods_data:
+                            return cls.from_forge_data(mod_data)
