@@ -118,12 +118,8 @@ class ServerConfiguration:
         self.load()
 
     def get_mods(self) -> list[Mod]:
-        mods = [
-            Mod.from_jar(path)
-            for path in self.server_path.joinpath("mods").glob("*.jar")
-        ]
-        mods = [mod for mod in mods if mod is not None]
-        return sorted(mods, key=lambda mod: mod.name)
+        paths = self.server_path.joinpath("mods").glob("*.jar")
+        return Mod.from_jars(paths)
 
     def load(self) -> None:
         properties_path = self.server_path.joinpath("server.properties")
