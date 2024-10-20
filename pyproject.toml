@@ -22,6 +22,7 @@ libtmux = "~0.37"
 tortoise-orm = { extras = ["asyncpg"], version = "^0.21.5" }
 aerich = "^0.7.2"
 backoff = "^2.2.1"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 pyinstrument = "^4.7.1"
