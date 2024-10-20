@@ -97,7 +97,8 @@ class BotApplication:
             if not mods:
                 await ctx.respond("There are no mods loaded.")
             else:
-                await ctx.respond(embed=get_mods_embed(mods))
+                for start in range(0, len(mods), 25):
+                    await ctx.respond(embed=get_mods_embed(mods[start : start + 25]))
 
     def run(self, *args, **kwargs):
         self.client.run(*args, **kwargs)
